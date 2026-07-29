@@ -4,8 +4,6 @@ extends Node3D
 ## briefing -> voo -> debriefing. O mundo em si e montado pelo MissionWorld a
 ## partir dos dados da missao, entao este arquivo nao conhece o mapa.
 
-const MISSION_PATH := "res://data/missions/slice_01.json"
-
 enum Phase {
 	BRIEFING,
 	FLYING,
@@ -19,6 +17,8 @@ var _hud: Hud
 var _briefing: BriefingScreen
 var _debriefing: DebriefingScreen
 var _player: PlayerHelicopter
+var _mission_index := 0
+var _mission_path := ""
 
 
 func _ready() -> void:
@@ -27,12 +27,20 @@ func _ready() -> void:
 
 	_ensure_runtime_input_map()
 
-	if not MissionManager.load_mission(MISSION_PATH):
+	if not GameState.has_campaign():
+		push_error("Campaign nao carregada. Encerrando.")
+		return
+
+	_mission_index = GameState.current_mission_index
+	_mission_path = GameState.get_current_mission_path()
+
+	if not MissionManager.load_mission(_mission_path):
 		push_error("Nao foi possivel carregar a missao. Encerrando.")
 		return
 
 	MissionManager.mission_completed.connect(_on_mission_completed)
 	MissionManager.mission_failed.connect(_on_mission_failed)
+	MissionManager.mission_message.connect(_on_mission_message)
 
 	_show_briefing()
 
@@ -119,15 +127,27 @@ func _on_objective_completed(objective_id: String) -> void:
 			return
 
 
+func _on_mission_message(text: String, color: Color) -> void:
+	if _hud != null:
+		_hud.show_message(text, 3.2, color)
+
+
 func _on_mission_completed(stats: Dictionary) -> void:
-	_show_debriefing(stats, true, "")
+	var progress := GameState.complete_mission(_mission_index, stats)
+	_show_debriefing(
+		stats,
+		true,
+		"",
+		bool(progress.get("has_next", false)),
+		str(progress.get("next_title", ""))
+	)
 
 
 func _on_mission_failed(reason: String) -> void:
-	_show_debriefing(MissionManager.build_stats(), false, reason)
+	_show_debriefing(MissionManager.build_stats(), false, reason, false, "")
 
 
-func _show_debriefing(stats: Dictionary, success: bool, reason: String) -> void:
+func _show_debriefing(stats: Dictionary, success: bool, reason: String, allow_continue: bool, next_title: String) -> void:
 	if phase == Phase.DEBRIEFING:
 		return
 
@@ -141,11 +161,20 @@ func _show_debriefing(stats: Dictionary, success: bool, reason: String) -> void:
 	_debriefing = DebriefingScreen.new()
 	_debriefing.name = "DebriefingScreen"
 	add_child(_debriefing)
-	_debriefing.setup(stats, success, reason)
+	_debriefing.setup(stats, success, reason, allow_continue, next_title)
 	_debriefing.restart_requested.connect(_restart)
+	_debriefing.continue_requested.connect(_continue_campaign)
 
 
 func _restart() -> void:
+	MissionManager.stop()
+	GameState.set_current_mission_index(_mission_index)
+	GameState.reset_score()
+	Engine.time_scale = 1.0
+	get_tree().reload_current_scene()
+
+
+func _continue_campaign() -> void:
 	MissionManager.stop()
 	GameState.reset_score()
 	Engine.time_scale = 1.0

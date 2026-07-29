@@ -21,10 +21,10 @@ extends Resource
 @export_group("Camera")
 @export var camera_smooth_time: float = 0.35
 @export var camera_lookahead: float = 6.0
-@export var camera_size_idle: float = 22.0
-@export var camera_size_max_speed: float = 26.0
+@export var camera_size_idle: float = 25.0
+@export var camera_size_max_speed: float = 29.0
 @export var camera_zoom_lerp: float = 2.5
-@export var camera_local_offset: Vector3 = Vector3(22.0, 22.0, 22.0)
+@export var camera_local_offset: Vector3 = Vector3(24.0, 24.0, 24.0)
 @export var camera_look_at_height: float = 0.0
 @export var trauma_decay: float = 1.5
 @export var trauma_translation: float = 0.45

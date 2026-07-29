@@ -39,6 +39,10 @@ func _run() -> void:
 		_finish()
 		return
 
+	var game_state := _game_state()
+	if game_state != null and game_state.has_method("set_current_mission_index"):
+		game_state.set_current_mission_index(0)
+
 	_world = scene.instantiate()
 	root.add_child(_world)
 	current_scene = _world
@@ -50,6 +54,7 @@ func _run() -> void:
 		await physics_frame
 
 	await _test_mission_loaded()
+	await _test_campaign_state()
 	await _test_spawns()
 	await _test_player_setup()
 	await _test_weapon_fire()
@@ -58,6 +63,7 @@ func _run() -> void:
 	await _test_hitscan_end_to_end()
 	await _test_fuel_drain()
 	await _test_pickup()
+	await _test_neutral_penalty()
 	await _test_rescue_and_delivery()
 	await _test_objective_flow()
 	await _test_audio()
@@ -90,6 +96,17 @@ func _test_mission_loaded() -> void:
 	for objective in visible:
 		visible_ids.append(objective["id"])
 	_expect(not visible_ids.has("hq"), "Objetivo do QG deveria comecar travado pelos radares")
+
+
+func _test_campaign_state() -> void:
+	var game_state := _game_state()
+	if game_state == null:
+		_fail("Autoload GameState nao encontrado")
+		return
+
+	_expect(game_state.get_mission_count() >= 2, "Campanha deveria ter pelo menos 2 missoes")
+	_expect(game_state.get_current_mission_path().ends_with("slice_01.json"),
+		"Smoke test deveria iniciar na primeira missao")
 
 
 func _test_spawns() -> void:
@@ -297,6 +314,29 @@ func _test_pickup() -> void:
 
 	_expect(fuel.fuel > 20.0, "Pickup de combustivel nao reabasteceu (seguiu em %.2f)" % fuel.fuel)
 	_expect(not is_instance_valid(fuel_crate), "Pickup coletado deveria sumir do mapa")
+
+
+func _test_neutral_penalty() -> void:
+	var mission := _mission()
+	var game_state := _game_state()
+	if mission == null or game_state == null:
+		return
+
+	var house = get_first_node_in_group("neutral_structure")
+	if house == null:
+		_fail("Nenhuma estrutura neutra encontrada na vila")
+		return
+
+	var hits_before: int = mission.civilian_hits
+	var score_before: int = game_state.score
+
+	house.take_damage(_make_damage(9999, house.global_position, true))
+	await physics_frame
+
+	_expect(mission.civilian_hits == hits_before + 1,
+		"Atingir a vila neutra deveria aumentar civilian_hits")
+	_expect(game_state.score < score_before,
+		"Atingir a vila neutra deveria aplicar penalidade de score")
 
 
 ## Resgate no guincho e entrega na base, que e o que fecha o objetivo de resgate.

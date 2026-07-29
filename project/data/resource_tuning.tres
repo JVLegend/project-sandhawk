@@ -5,16 +5,16 @@
 [resource]
 script = ExtResource("1")
 fuel_max = 100.0
-fuel_drain_per_second = 1.0
+fuel_drain_per_second = 0.58
 fuel_warning_threshold = 25.0
 fuel_critical_threshold = 10.0
-fuel_pickup_amount = 50.0
+fuel_pickup_amount = 60.0
 armor_max = 600
 armor_pickup_amount = 200
 pad_radius = 9.0
 pad_max_speed = 2.5
 pad_hold_seconds = 2.0
-refuel_seconds = 10.0
+refuel_seconds = 8.0
 winch_descend_seconds = 2.0
 winch_ascend_seconds = 2.0
 winch_max_speed = 3.0

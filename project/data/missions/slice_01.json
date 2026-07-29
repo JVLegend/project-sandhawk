@@ -41,7 +41,7 @@
     }
   ],
   "debriefing": {
-    "par_time_sec": 600
+    "par_time_sec": 660
   },
   "world": {
     "seed": 20260729,
@@ -103,6 +103,7 @@
       {"kind": "fuel", "position": [-140.0, 128.0]},
       {"kind": "fuel", "position": [196.0, 160.0]},
       {"kind": "fuel", "position": [-84.0, -70.0]},
+      {"kind": "fuel", "position": [246.0, 204.0]},
       {"kind": "armor", "position": [156.0, -120.0]},
       {"kind": "armor", "position": [-176.0, 176.0]},
       {"kind": "ammo_machinegun", "position": [92.0, 42.0]},
@@ -110,6 +111,7 @@
       {"kind": "ammo_rockets", "position": [178.0, -142.0]},
       {"kind": "ammo_rockets", "position": [214.0, 196.0]},
       {"kind": "ammo_missiles", "position": [-64.0, 154.0]},
+      {"kind": "ammo_missiles", "position": [228.0, 232.0]},
       {"kind": "intel", "id": "intel_1", "position": [148.0, 66.0]}
     ]
   }

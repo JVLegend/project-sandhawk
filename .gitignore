@@ -1,6 +1,36 @@
+# OS / editor
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs / temp
+*.tmp
+*.temp
+*.log
+
+# Godot generated state
 **/.godot/
 **/.import/
+project/.godot/
+
+# Local exports / builds
 project/builds/
-*.tmp
-*.log
+project/dist/
+project/releases/
+project/captures/
+
+# Local-only raw assets and heavy references
+project/assets_raw/
+project/textures_hd/
+project/audio_raw/
+project/reference_media/
+project/exports_raw/
+
+# Archives and heavy handoff packages
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz

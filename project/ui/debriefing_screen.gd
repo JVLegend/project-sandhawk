@@ -5,6 +5,7 @@ extends CanvasLayer
 ## Existe para o jogador querer um segundo run, entao mostra o que deu para melhorar.
 
 signal restart_requested
+signal continue_requested
 
 const COLOR_BG := Color(0.05, 0.055, 0.06, 0.97)
 const COLOR_TEXT := Color(0.86, 0.88, 0.9)
@@ -16,11 +17,22 @@ const COLOR_CYAN := Color(0.42, 0.82, 0.94)
 
 var _blink_time := 0.0
 var _prompt: Label
+var _secondary_prompt: Label
+var _allow_continue := false
+var _success := false
 
 
-func setup(stats: Dictionary, success: bool, failure_reason: String = "") -> void:
+func setup(
+	stats: Dictionary,
+	success: bool,
+	failure_reason: String = "",
+	allow_continue: bool = false,
+	next_title: String = ""
+) -> void:
 	layer = 10
-	_build(stats, success, failure_reason)
+	_allow_continue = allow_continue
+	_success = success
+	_build(stats, success, failure_reason, next_title)
 
 
 func _process(delta: float) -> void:
@@ -30,13 +42,19 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_select"):
+	if _allow_continue and _success and (event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_select")):
+		get_viewport().set_input_as_handled()
+		AudioManager.play_ui_click()
+		continue_requested.emit()
+		return
+
+	if event.is_action_pressed("debug_restart") or ((event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_select")) and not _allow_continue):
 		get_viewport().set_input_as_handled()
 		AudioManager.play_ui_click()
 		restart_requested.emit()
 
 
-func _build(stats: Dictionary, success: bool, failure_reason: String) -> void:
+func _build(stats: Dictionary, success: bool, failure_reason: String, next_title: String) -> void:
 	var background := ColorRect.new()
 	background.color = COLOR_BG
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -87,10 +105,23 @@ func _build(stats: Dictionary, success: bool, failure_reason: String) -> void:
 		str(stats.get("losses", 0)),
 		COLOR_RED if int(stats.get("losses", 0)) > 0 else COLOR_TEXT
 	))
+	box.add_child(_make_row(
+		"ALVOS CIVIS ATINGIDOS",
+		str(stats.get("civilian_hits", 0)),
+		COLOR_RED if int(stats.get("civilian_hits", 0)) > 0 else COLOR_TEXT
+	))
 
 	var separator_two := HSeparator.new()
 	separator_two.custom_minimum_size = Vector2(420.0, 12.0)
 	box.add_child(separator_two)
+
+	if _allow_continue and success:
+		_prompt = _make_label("ENTER PARA AVANCAR: %s" % next_title.to_upper(), 16, COLOR_CYAN)
+		_secondary_prompt = _make_label("F5 PARA REVOAR ESTA MISSAO", 13, COLOR_DIM)
+		_secondary_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(_prompt)
+		box.add_child(_secondary_prompt)
+		return
 
 	_prompt = _make_label("ENTER PARA VOAR DE NOVO", 16, COLOR_CYAN)
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

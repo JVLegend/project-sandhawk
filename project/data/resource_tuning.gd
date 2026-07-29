@@ -7,10 +7,10 @@ extends Resource
 @export_group("Combustivel")
 @export var fuel_max: float = 100.0
 ## Unidades por segundo em voo.
-@export var fuel_drain_per_second: float = 1.0
+@export var fuel_drain_per_second: float = 0.58
 @export var fuel_warning_threshold: float = 25.0
 @export var fuel_critical_threshold: float = 10.0
-@export var fuel_pickup_amount: float = 50.0
+@export var fuel_pickup_amount: float = 60.0
 
 @export_group("Blindagem")
 @export var armor_max: int = 600
@@ -22,7 +22,7 @@ extends Resource
 @export var pad_max_speed: float = 2.5
 @export var pad_hold_seconds: float = 2.0
 ## Tempo para reabastecer tudo. Longo de proposito: cria janela de vulnerabilidade.
-@export var refuel_seconds: float = 10.0
+@export var refuel_seconds: float = 8.0
 
 @export_group("Resgate")
 @export var winch_descend_seconds: float = 2.0

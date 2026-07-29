@@ -9,8 +9,11 @@ signal objective_completed(objective_id: String)
 signal objective_unlocked(objective_id: String)
 signal mission_completed(stats: Dictionary)
 signal mission_failed(reason: String)
+signal mission_message(text: String, color: Color)
 
 const MAX_LOSSES := 3
+const MAX_CIVILIAN_HITS := 3
+const CIVILIAN_SCORE_PENALTY := 300
 
 var mission: Dictionary = {}
 var objectives: Array[Dictionary] = []
@@ -18,6 +21,7 @@ var elapsed := 0.0
 var running := false
 var losses := 0
 var rescued_delivered := 0
+var civilian_hits := 0
 
 
 func load_mission(path: String) -> bool:
@@ -42,6 +46,7 @@ func start() -> void:
 	elapsed = 0.0
 	losses = 0
 	rescued_delivered = 0
+	civilian_hits = 0
 	running = true
 	_build_objective_state()
 	objectives_changed.emit()
@@ -145,6 +150,24 @@ func notify_player_lost() -> void:
 		mission_failed.emit("helicoptero perdido %d vezes" % losses)
 
 
+func notify_neutral_structure_destroyed(label: String) -> void:
+	if not running:
+		return
+
+	civilian_hits += 1
+	GameState.add_score(-CIVILIAN_SCORE_PENALTY)
+
+	var clean_label := label if not label.is_empty() else "alvo civil"
+	mission_message.emit(
+		"CIVIS ATINGIDOS: %s  (-%d)" % [clean_label.to_upper(), CIVILIAN_SCORE_PENALTY],
+		Color(0.96, 0.44, 0.28)
+	)
+
+	if civilian_hits >= MAX_CIVILIAN_HITS:
+		running = false
+		mission_failed.emit("vila neutra devastada")
+
+
 func build_stats() -> Dictionary:
 	var required_done := 0
 	var required_total := 0
@@ -162,12 +185,14 @@ func build_stats() -> Dictionary:
 				optional_done += 1
 
 	return {
+		"mission_id": str(mission.get("id", "")),
 		"title": get_title(),
 		"time": elapsed,
 		"par_time": get_par_time(),
 		"score": GameState.score,
 		"losses": losses,
 		"rescued": rescued_delivered,
+		"civilian_hits": civilian_hits,
 		"required_done": required_done,
 		"required_total": required_total,
 		"optional_done": optional_done,

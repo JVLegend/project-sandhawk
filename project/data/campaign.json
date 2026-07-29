@@ -1,0 +1,14 @@
+{
+  "missions": [
+    {
+      "id": "slice_01",
+      "name": "Tempestade no Deserto de Ferro",
+      "path": "res://data/missions/slice_01.json"
+    },
+    {
+      "id": "slice_02",
+      "name": "Ruptura em Zafir",
+      "path": "res://data/missions/slice_02.json"
+    }
+  ]
+}

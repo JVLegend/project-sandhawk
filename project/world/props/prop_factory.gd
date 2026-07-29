@@ -4,6 +4,8 @@ extends RefCounted
 ## Fabrica de cenario gerado em codigo: pedras, palmeiras, casas e muros.
 ## Tudo procedural e autoral, sem asset externo, seguindo a politica do repo.
 
+const NEUTRAL_BUILDING_SCRIPT := preload("res://actors/structures/neutral_building.gd")
+
 
 static func make_rock(scale_factor: float, rng: RandomNumberGenerator) -> Node3D:
 	var root := Node3D.new()
@@ -87,18 +89,28 @@ static func make_palm(rng: RandomNumberGenerator) -> Node3D:
 
 
 static func make_house(rng: RandomNumberGenerator, neutral: bool = true) -> Node3D:
+	var width := rng.randf_range(5.0, 8.5)
+	var depth := rng.randf_range(5.0, 8.0)
+	var height := rng.randf_range(3.0, 5.2)
+
+	var base_tone := Color(0.8, 0.7, 0.53) if neutral else Color(0.38, 0.38, 0.31)
+	var wall_color := base_tone.lerp(Color(0.7, 0.6, 0.46), rng.randf() * 0.6)
+	var roof_color := base_tone.darkened(0.28)
+
+	if neutral:
+		var building = NEUTRAL_BUILDING_SCRIPT.new()
+		building.name = "CivilianHouse"
+		building.setup_house(width, depth, height, wall_color, roof_color)
+		building.rotation.y = rng.randf_range(0.0, TAU)
+		return building
+
 	var root := StaticBody3D.new()
 	root.name = "House"
 	root.collision_layer = CombatLayers.WORLD
 	root.collision_mask = 0
 
-	var width := rng.randf_range(5.0, 8.5)
-	var depth := rng.randf_range(5.0, 8.0)
-	var height := rng.randf_range(3.0, 5.2)
-
 	var wall_material := StandardMaterial3D.new()
-	var base_tone := Color(0.8, 0.7, 0.53) if neutral else Color(0.38, 0.38, 0.31)
-	wall_material.albedo_color = base_tone.lerp(Color(0.7, 0.6, 0.46), rng.randf() * 0.6)
+	wall_material.albedo_color = wall_color
 	wall_material.roughness = 0.96
 
 	var walls := MeshInstance3D.new()
@@ -123,7 +135,7 @@ static func make_house(rng: RandomNumberGenerator, neutral: bool = true) -> Node
 	roof.position = Vector3(0.0, height + 0.2, 0.0)
 
 	var roof_material := StandardMaterial3D.new()
-	roof_material.albedo_color = base_tone.darkened(0.28)
+	roof_material.albedo_color = roof_color
 	roof_material.roughness = 0.98
 	roof.material_override = roof_material
 	root.add_child(roof)
