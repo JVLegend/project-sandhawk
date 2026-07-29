@@ -247,6 +247,8 @@ func _build_visual() -> void:
 	trail_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	trail_material.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	trail_material.vertex_color_use_as_albedo = true
+	## Sem a textura radial cada baforada e um quadrado de borda dura na tela.
+	trail_material.albedo_texture = Vfx.get_soft_texture()
 	_trail.material_override = trail_material
 
 	add_child(_trail)

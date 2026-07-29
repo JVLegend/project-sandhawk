@@ -5,15 +5,17 @@ extends Node3D
 ## partir dos dados da missao, entao este arquivo nao conhece o mapa.
 
 enum Phase {
+	TITLE,
 	BRIEFING,
 	FLYING,
 	DEBRIEFING,
 }
 
-var phase: int = Phase.BRIEFING
+var phase: int = Phase.TITLE
 
 var _world: MissionWorld
 var _hud: Hud
+var _title: TitleScreen
 var _briefing: BriefingScreen
 var _debriefing: DebriefingScreen
 var _player: PlayerHelicopter
@@ -43,6 +45,36 @@ func _ready() -> void:
 	MissionManager.mission_failed.connect(_on_mission_failed)
 	MissionManager.mission_message.connect(_on_mission_message)
 
+	## O titulo aparece uma vez por execucao. No restart por F5 ou no avanco de
+	## campanha a cena recarrega, e cair de novo no menu quebraria o ritmo.
+	if GameState.title_shown:
+		_show_briefing()
+	else:
+		_show_title()
+
+
+func _show_title() -> void:
+	phase = Phase.TITLE
+
+	_title = TitleScreen.new()
+	_title.name = "TitleScreen"
+	_title.mission_chosen.connect(_on_mission_chosen)
+	add_child(_title)
+
+
+func _on_mission_chosen(index: int) -> void:
+	GameState.title_shown = true
+
+	if _title != null:
+		_title.queue_free()
+		_title = null
+
+	## Escolher outra missao troca o arquivo carregado antes do briefing.
+	if index != _mission_index:
+		GameState.set_current_mission_index(index)
+		_restart()
+		return
+
 	_show_briefing()
 
 
@@ -68,12 +100,30 @@ func _show_briefing() -> void:
 	add_child(_briefing)
 
 
-## Pula o briefing e entra direto no voo. Usado pelas ferramentas de teste e
-## de captura, que precisam do mundo montado sem interacao.
+## Pula titulo e briefing e entra direto no voo. Usado pelas ferramentas de
+## teste e de captura, que precisam do mundo montado sem interacao.
 func skip_briefing() -> void:
+	if phase == Phase.TITLE:
+		GameState.title_shown = true
+		if _title != null:
+			_title.queue_free()
+			_title = null
+		_show_briefing()
+
 	if phase != Phase.BRIEFING:
 		return
 	_on_briefing_dismissed()
+
+
+## So dispensa o titulo, parando no briefing. Usado pela captura de tela.
+func skip_title() -> void:
+	if phase != Phase.TITLE:
+		return
+	GameState.title_shown = true
+	if _title != null:
+		_title.queue_free()
+		_title = null
+	_show_briefing()
 
 
 func _on_briefing_dismissed() -> void:

@@ -7,12 +7,18 @@ extends Node
 const SOFT_TEXTURE_SIZE := 64
 
 var _soft_texture: ImageTexture
+var _scorch_texture: ImageTexture
 var _quad_mesh: QuadMesh
 var _debris_mesh: BoxMesh
+var _spark_mesh: BoxMesh
 
 
 func _ready() -> void:
 	_soft_texture = _make_soft_texture()
+	_scorch_texture = _make_scorch_texture()
+
+	_spark_mesh = BoxMesh.new()
+	_spark_mesh.size = Vector3(0.07, 0.07, 0.5)
 
 	_quad_mesh = QuadMesh.new()
 	_quad_mesh.size = Vector2.ONE
@@ -136,6 +142,13 @@ func spawn_explosion(position: Vector3, scale_factor: float = 1.0) -> void:
 	_spawn_shockwave(position, scale_factor)
 	_spawn_smoke(position, scale_factor)
 	_spawn_debris(position, scale_factor)
+	_spawn_sparks(position, scale_factor)
+	_spawn_scorch(position, scale_factor)
+
+	## Explosao grande deixa uma coluna de fumaca por alguns segundos: e o que
+	## marca no horizonte ONDE algo acabou de morrer.
+	if scale_factor >= 1.2:
+		_spawn_lingering_smoke(position, scale_factor)
 
 
 ## Flash branco no material de um mesh atingido.
@@ -317,6 +330,130 @@ func _spawn_debris(position: Vector3, scale_factor: float) -> void:
 	_free_after(particles, 2.0)
 
 
+## Faiscas incandescentes: riscos aditivos rapidos que vendem o estouro.
+func _spawn_sparks(position: Vector3, scale_factor: float) -> void:
+	var particles := GPUParticles3D.new()
+	particles.amount = int(10 * scale_factor) + 6
+	particles.lifetime = 0.5
+	particles.one_shot = true
+	particles.explosiveness = 1.0
+	particles.draw_pass_1 = _spark_mesh
+
+	var process := ParticleProcessMaterial.new()
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	process.emission_sphere_radius = 0.3
+	process.direction = Vector3.UP
+	process.spread = 80.0
+	process.initial_velocity_min = 12.0
+	process.initial_velocity_max = 26.0 * scale_factor
+	process.gravity = Vector3(0.0, -30.0, 0.0)
+	process.scale_min = 0.6
+	process.scale_max = 1.4
+	## Alinhadas a velocidade: cada faisca vira um risco, nao um cubo.
+	process.particle_flag_align_y = true
+
+	var ramp := Gradient.new()
+	ramp.offsets = PackedFloat32Array([0.0, 0.6, 1.0])
+	ramp.colors = PackedColorArray([
+		Color(1.0, 0.93, 0.6, 1.0),
+		Color(1.0, 0.55, 0.18, 1.0),
+		Color(0.6, 0.15, 0.05, 0.0),
+	])
+	var ramp_texture := GradientTexture1D.new()
+	ramp_texture.gradient = ramp
+	process.color_ramp = ramp_texture
+	particles.process_material = process
+
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	material.vertex_color_use_as_albedo = true
+	particles.material_override = material
+
+	_host().add_child(particles)
+	particles.global_position = position + Vector3.UP * 0.4
+	particles.emitting = true
+	_free_after(particles, 1.2)
+
+
+## Marca de queimado no chao. Fica ~18 s e esvai: o campo de batalha passa a
+## contar a historia da luta em vez de voltar ao estado de fabrica.
+func _spawn_scorch(position: Vector3, scale_factor: float) -> void:
+	var decal := Decal.new()
+	decal.texture_albedo = _scorch_texture
+	decal.modulate = Color(0.06, 0.05, 0.045, 0.9)
+	decal.albedo_mix = 0.9
+	var footprint := 4.5 * scale_factor
+	decal.size = Vector3(footprint, 6.0, footprint)
+	decal.lower_fade = 1.2
+	decal.upper_fade = 1.2
+
+	_host().add_child(decal)
+	decal.global_position = Vector3(position.x, position.y + 0.5, position.z)
+	decal.rotation.y = randf_range(0.0, TAU)
+
+	var tween := decal.create_tween()
+	tween.tween_interval(12.0)
+	tween.tween_property(decal, "modulate:a", 0.0, 6.0)
+	tween.tween_callback(decal.queue_free)
+
+
+## Coluna de fumaca que continua subindo depois do estouro.
+func _spawn_lingering_smoke(position: Vector3, scale_factor: float) -> void:
+	var particles := GPUParticles3D.new()
+	particles.amount = 26
+	particles.lifetime = 2.6
+	particles.one_shot = false
+	particles.explosiveness = 0.0
+	particles.draw_pass_1 = _quad_mesh
+
+	var process := ParticleProcessMaterial.new()
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	process.emission_sphere_radius = 0.6 * scale_factor
+	process.direction = Vector3.UP
+	process.spread = 12.0
+	process.initial_velocity_min = 2.2
+	process.initial_velocity_max = 4.2
+	process.gravity = Vector3(0.6, 1.8, 0.2)
+	process.scale_min = 1.6 * scale_factor
+	process.scale_max = 3.4 * scale_factor
+	process.angle_min = -180.0
+	process.angle_max = 180.0
+
+	var ramp := Gradient.new()
+	ramp.offsets = PackedFloat32Array([0.0, 0.25, 1.0])
+	ramp.colors = PackedColorArray([
+		Color(0.16, 0.14, 0.12, 0.0),
+		Color(0.22, 0.2, 0.18, 0.6),
+		Color(0.42, 0.4, 0.38, 0.0),
+	])
+	var ramp_texture := GradientTexture1D.new()
+	ramp_texture.gradient = ramp
+	process.color_ramp = ramp_texture
+	particles.process_material = process
+
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	material.vertex_color_use_as_albedo = true
+	material.albedo_texture = _soft_texture
+	particles.material_override = material
+
+	_host().add_child(particles)
+	particles.global_position = position + Vector3.UP * 0.8
+	particles.emitting = true
+
+	## Emite por alguns segundos e para; as particulas vivas terminam sozinhas.
+	var stop_timer := get_tree().create_timer(3.2)
+	stop_timer.timeout.connect(func() -> void:
+		if is_instance_valid(particles):
+			particles.emitting = false
+	)
+	_free_after(particles, 6.5)
+
+
 func _orient_along(node: Node3D, direction: Vector3) -> void:
 	if direction.length_squared() < 0.0001:
 		return
@@ -343,6 +480,25 @@ func _host() -> Node:
 	if scene != null:
 		return scene
 	return get_tree().root
+
+
+## Mancha radial irregular: circulo perfeito de queimado pareceria adesivo.
+func _make_scorch_texture() -> ImageTexture:
+	var image := Image.create(SOFT_TEXTURE_SIZE, SOFT_TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	var center := Vector2(SOFT_TEXTURE_SIZE, SOFT_TEXTURE_SIZE) * 0.5
+	var radius := SOFT_TEXTURE_SIZE * 0.48
+
+	for y in range(SOFT_TEXTURE_SIZE):
+		for x in range(SOFT_TEXTURE_SIZE):
+			var offset := Vector2(x, y) - center
+			var angle := offset.angle()
+			## Borda ondulada por dois harmonicos, para quebrar o circulo.
+			var wobble := 1.0 + 0.16 * sin(angle * 5.0) + 0.1 * sin(angle * 9.0 + 1.7)
+			var distance := offset.length() / wobble
+			var alpha := 1.0 - smoothstep(radius * 0.25, radius, distance)
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+
+	return ImageTexture.create_from_image(image)
 
 
 func _make_soft_texture() -> ImageTexture:

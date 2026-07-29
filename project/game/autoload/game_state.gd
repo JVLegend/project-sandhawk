@@ -14,6 +14,10 @@ var unlocked_mission_count := 1
 var best_scores := {}
 var best_times := {}
 
+## Runtime, de proposito fora do save: o menu de titulo aparece so no primeiro
+## boot de cada execucao, nunca em restart de missao.
+var title_shown := false
+
 var _hitstop_active := false
 
 const CAMPAIGN_PATH := "res://data/campaign.json"

@@ -32,7 +32,14 @@ func _ready() -> void:
 	_main = MAIN_SCENE.instantiate()
 	add_child(_main)
 
+	if mode == "title":
+		await _wait_frames(SETTLE_FRAMES)
+		await _capture(output_path)
+		return
+
 	if mode == "briefing":
+		await _wait_frames(4)
+		_main.skip_title()
 		await _wait_frames(SETTLE_FRAMES)
 		await _capture(output_path)
 		return
