@@ -29,6 +29,16 @@ func add_trauma(amount: float) -> void:
 	trauma = clampf(trauma + amount, 0.0, 1.0)
 
 
+## Corta o amortecimento e cola a camera no alvo. Usado quando o helicoptero
+## e teleportado (respawn, inicio de missao, ferramentas de captura), onde
+## interpolar por 400 metros deixaria a camera olhando para o vazio.
+func snap_to_target() -> void:
+	if follow_target == null:
+		return
+	global_position = follow_target.global_position
+	smoothing_velocity = Vector3.ZERO
+
+
 func _process(delta: float) -> void:
 	if follow_target == null or tuning == null:
 		return

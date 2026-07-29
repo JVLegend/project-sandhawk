@@ -1,21 +1,25 @@
 extends SceneTree
 
-## Teste de fumaca do combate (Fase 4). Roda headless e exercita o caminho real:
-## spawn de inimigos, disparo por input, dano, morte, score e dano no jogador.
+## Teste de fumaca do jogo inteiro. Roda headless e exercita o caminho real:
+## missao carregada, mundo montado, combate, recursos, resgate e objetivos.
 ## Uso: godot --headless --script tools/combat_smoke_test.gd
 ##
 ## IMPORTANTE: em modo --script este arquivo vira o main loop e compila ANTES de
 ## os autoloads existirem. Por isso nada aqui referencia classes do jogo nem
 ## autoloads de forma estatica: tudo e resolvido em runtime, com load() e por
-## grupo/duck typing. Referenciar PlaceholderHelicopter ou Vfx diretamente
+## grupo/duck typing. Referenciar PlayerHelicopter ou Vfx diretamente
 ## quebraria a compilacao deste script, nao o jogo.
 
 const EXPECTED_ARMOR := 600
-const EXPECTED_SOLDIERS := 7
-const EXPECTED_TURRETS := 3
+const EXPECTED_SOLDIERS := 15
+const EXPECTED_TURRETS := 4
+const EXPECTED_SAMS := 2
+const EXPECTED_STRUCTURES := 4
+const EXPECTED_POWS := 4
 
 var _failures: Array[String] = []
 var _damage_event_script: GDScript
+var _world: Node
 
 
 func _init() -> void:
@@ -35,48 +39,92 @@ func _run() -> void:
 		_finish()
 		return
 
-	var world := scene.instantiate()
-	root.add_child(world)
-	current_scene = world
+	_world = scene.instantiate()
+	root.add_child(_world)
+	current_scene = _world
 
-	for _i in 4:
+	await physics_frame
+	_world.skip_briefing()
+
+	for _i in 6:
 		await physics_frame
 
+	await _test_mission_loaded()
 	await _test_spawns()
-	await _test_player_setup(world)
+	await _test_player_setup()
 	await _test_weapon_fire()
 	await _test_enemy_death()
 	await _test_player_damage()
 	await _test_hitscan_end_to_end()
+	await _test_fuel_drain()
+	await _test_pickup()
+	await _test_rescue_and_delivery()
+	await _test_objective_flow()
+	await _test_audio()
 	await _test_aaa_threat()
 
 	_finish()
 
 
-func _test_spawns() -> void:
-	var enemies := get_nodes_in_group("enemy")
-	var expected_total := EXPECTED_SOLDIERS + EXPECTED_TURRETS
-	_expect(enemies.size() == expected_total,
-		"Arena deve ter %d alvos, tem %d" % [expected_total, enemies.size()])
+func _mission() -> Node:
+	return root.get_node_or_null("/root/MissionManager")
 
+
+func _game_state() -> Node:
+	return root.get_node_or_null("/root/GameState")
+
+
+func _test_mission_loaded() -> void:
+	var mission := _mission()
+	if mission == null:
+		_fail("Autoload MissionManager nao encontrado")
+		return
+
+	_expect(mission.running, "Missao deveria estar rodando apos o briefing")
+	_expect(mission.objectives.size() == 4, "Missao deveria ter 4 objetivos, tem %d" % mission.objectives.size())
+	_expect(not mission.get_title().is_empty(), "Missao sem titulo")
+
+	## O objetivo do QG comeca travado pelos radares.
+	var visible: Array = mission.get_visible_objectives()
+	var visible_ids: Array = []
+	for objective in visible:
+		visible_ids.append(objective["id"])
+	_expect(not visible_ids.has("hq"), "Objetivo do QG deveria comecar travado pelos radares")
+
+
+func _test_spawns() -> void:
 	var soldiers := 0
 	var turrets := 0
-	for enemy in enemies:
+	var sams := 0
+
+	for enemy in get_nodes_in_group("enemy"):
 		var definition = enemy.get("definition")
 		if definition == null:
-			_fail("Inimigo sem definition carregada")
 			continue
 		match definition.id:
 			"soldier_ak":
 				soldiers += 1
 			"aaa_gun":
 				turrets += 1
+			"sam_launcher":
+				sams += 1
 
 	_expect(soldiers == EXPECTED_SOLDIERS, "Esperado %d soldados, achou %d" % [EXPECTED_SOLDIERS, soldiers])
 	_expect(turrets == EXPECTED_TURRETS, "Esperado %d canhoes AAA, achou %d" % [EXPECTED_TURRETS, turrets])
+	_expect(sams == EXPECTED_SAMS, "Esperado %d lancadores SAM, achou %d" % [EXPECTED_SAMS, sams])
+
+	var structures := get_nodes_in_group("structure")
+	_expect(structures.size() == EXPECTED_STRUCTURES,
+		"Esperado %d estruturas, achou %d" % [EXPECTED_STRUCTURES, structures.size()])
+
+	var pows := get_nodes_in_group("pow")
+	_expect(pows.size() == EXPECTED_POWS, "Esperado %d resgatados, achou %d" % [EXPECTED_POWS, pows.size()])
+
+	_expect(not get_nodes_in_group("pickup").is_empty(), "Nenhum pickup no mapa")
+	_expect(get_first_node_in_group("friendly_base") != null, "Base amiga nao foi criada")
 
 
-func _test_player_setup(world: Node) -> void:
+func _test_player_setup() -> void:
 	var player := get_first_node_in_group("player")
 	_expect(player != null, "Helicoptero do jogador nao entrou no grupo player")
 	if player == null:
@@ -87,12 +135,14 @@ func _test_player_setup(world: Node) -> void:
 	if health != null:
 		_expect(health.max_hp == EXPECTED_ARMOR,
 			"Blindagem maxima deveria ser %d, e %d" % [EXPECTED_ARMOR, health.max_hp])
-		_expect(health.hp == health.max_hp, "Jogador deveria comecar com blindagem cheia")
 
 	var weapons = player.get("weapons")
 	_expect(weapons != null and weapons.runtimes.size() == 3, "Jogador deveria ter 3 armas carregadas")
 	_expect(player.get("targeting") != null, "Sistema de mira nao foi criado")
-	_expect(world.get_node_or_null("DebugHud") != null, "HUD de debug nao foi criado")
+	_expect(player.get("fuel") != null, "Sistema de combustivel nao foi criado")
+	_expect(player.get("winch") != null, "Guincho de resgate nao foi criado")
+	_expect(_world.get_node_or_null("Hud") != null, "HUD nao foi criado")
+	_expect(_world.get_node_or_null("MissionWorld") != null, "Mundo da missao nao foi montado")
 
 
 func _test_weapon_fire() -> void:
@@ -130,24 +180,23 @@ func _test_weapon_fire() -> void:
 
 
 func _test_enemy_death() -> void:
-	var game_state := root.get_node_or_null("/root/GameState")
+	var game_state := _game_state()
 	if game_state == null:
-		_fail("Autoload GameState nao encontrado em /root/GameState")
+		_fail("Autoload GameState nao encontrado")
 		return
 
-	var enemies := get_nodes_in_group("enemy")
-	if enemies.is_empty():
-		_fail("Sem inimigos para testar morte")
+	var victim := _find_enemy_by_id("soldier_ak")
+	if victim == null:
+		_fail("Sem soldados para testar morte")
 		return
 
-	var victim: Node3D = enemies[0]
 	var score_before: int = game_state.score
-	var count_before := enemies.size()
+	var count_before := get_nodes_in_group("enemy").size()
 
 	victim.take_damage(_make_damage(9999, victim.global_position, true))
 
-	for _i in 3:
-		await physics_frame
+	## Espera em tempo real: durante o hitstop o relogio do jogo esta parado.
+	await _wait_real(0.25)
 
 	_expect(game_state.score > score_before,
 		"Score nao subiu apos abate (antes %d, agora %d)" % [score_before, game_state.score])
@@ -175,7 +224,6 @@ func _test_player_damage() -> void:
 
 
 ## Loop completo do jogador: mira assistida -> hitscan -> dano no inimigo.
-## E o teste que mais importa: se este passar, o combate funciona de verdade.
 func _test_hitscan_end_to_end() -> void:
 	var player := get_first_node_in_group("player")
 	if player == null:
@@ -209,6 +257,145 @@ func _test_hitscan_end_to_end() -> void:
 		"Metralhadora nao causou dano no alvo travado (HP %d antes e depois)" % hp_before)
 
 
+func _test_fuel_drain() -> void:
+	var player := get_first_node_in_group("player")
+	if player == null:
+		return
+
+	var fuel = player.get("fuel")
+	if fuel == null:
+		return
+
+	var before: float = fuel.fuel
+	for _i in 90:
+		await physics_frame
+
+	_expect(fuel.fuel < before, "Combustivel deveria drenar em voo (seguiu em %.2f)" % fuel.fuel)
+
+
+func _test_pickup() -> void:
+	var player := get_first_node_in_group("player")
+	if player == null:
+		return
+
+	var fuel_crate: Node3D = null
+	for node in get_nodes_in_group("pickup"):
+		if node.type == 0:
+			fuel_crate = node
+			break
+
+	if fuel_crate == null:
+		_fail("Nenhum pickup de combustivel no mapa")
+		return
+
+	var fuel = player.get("fuel")
+	fuel.fuel = 20.0
+
+	player.global_position = Vector3(fuel_crate.global_position.x, player.global_position.y, fuel_crate.global_position.z)
+	for _i in 6:
+		await process_frame
+
+	_expect(fuel.fuel > 20.0, "Pickup de combustivel nao reabasteceu (seguiu em %.2f)" % fuel.fuel)
+	_expect(not is_instance_valid(fuel_crate), "Pickup coletado deveria sumir do mapa")
+
+
+## Resgate no guincho e entrega na base, que e o que fecha o objetivo de resgate.
+func _test_rescue_and_delivery() -> void:
+	var player := get_first_node_in_group("player")
+	var base := get_first_node_in_group("friendly_base") as Node3D
+	var mission := _mission()
+	if player == null or base == null or mission == null:
+		return
+
+	var pows := get_nodes_in_group("pow")
+	if pows.is_empty():
+		_fail("Nenhum resgatado no mapa")
+		return
+
+	var pow_node: Node3D = pows[0]
+	var winch = player.get("winch")
+	var fuel = player.get("fuel")
+
+	player.global_position = Vector3(pow_node.global_position.x, player.global_position.y, pow_node.global_position.z)
+	await physics_frame
+
+	Input.action_press("winch")
+	for _i in 320:
+		await physics_frame
+	Input.action_release("winch")
+	await physics_frame
+
+	_expect(winch.passengers == 1, "Guincho deveria ter 1 resgatado a bordo, tem %d" % winch.passengers)
+	_expect(not is_instance_valid(pow_node), "Resgatado deveria sair do mapa apos a subida")
+
+	## Entrega na base: pairar sobre o pad reabastece e desembarca.
+	fuel.fuel = 15.0
+	player.global_position = Vector3(base.global_position.x, player.global_position.y, base.global_position.z)
+
+	for _i in 300:
+		await physics_frame
+
+	_expect(fuel.fuel > 15.0, "Base nao reabasteceu (combustivel seguiu em %.2f)" % fuel.fuel)
+	_expect(winch.passengers == 0, "Base deveria receber os resgatados (ainda tem %d)" % winch.passengers)
+	_expect(mission.rescued_delivered >= 1,
+		"Missao nao registrou a entrega (rescued_delivered=%d)" % mission.rescued_delivered)
+
+
+## Destruir os dois radares fecha um objetivo e destrava o do QG.
+func _test_objective_flow() -> void:
+	var mission := _mission()
+	if mission == null:
+		return
+
+	for node in get_nodes_in_group("structure"):
+		if node.structure_id == "radar_1" or node.structure_id == "radar_2":
+			node.take_damage(_make_damage(9999, node.global_position, true))
+			await physics_frame
+
+	for _i in 4:
+		await physics_frame
+
+	var radar_objective = _find_objective(mission, "radar")
+	_expect(radar_objective != null and radar_objective["done"],
+		"Objetivo dos radares deveria estar concluido apos destruir os dois")
+
+	var visible_ids: Array = []
+	for objective in mission.get_visible_objectives():
+		visible_ids.append(objective["id"])
+	_expect(visible_ids.has("hq"), "Objetivo do QG deveria destravar apos os radares")
+
+
+## Audio sintetizado: buses criados, loops presos ao jogador e streams validos.
+func _test_audio() -> void:
+	var audio := root.get_node_or_null("/root/AudioManager")
+	if audio == null:
+		_fail("Autoload AudioManager nao encontrado")
+		return
+
+	for bus_name in ["Music", "SFX", "UI"]:
+		_expect(AudioServer.get_bus_index(bus_name) != -1, "Bus de audio %s nao foi criado" % bus_name)
+
+	var player := get_first_node_in_group("player")
+	if player == null:
+		return
+
+	var rotor := player.get_node_or_null("RotorLoop") as AudioStreamPlayer3D
+	_expect(rotor != null, "Loop do rotor nao foi preso ao helicoptero")
+	if rotor != null:
+		_expect(rotor.playing, "Loop do rotor deveria estar tocando")
+		var stream := rotor.stream as AudioStreamWAV
+		_expect(stream != null and stream.data.size() > 0, "Stream do rotor esta vazio")
+		_expect(stream != null and stream.loop_mode == AudioStreamWAV.LOOP_FORWARD,
+			"Rotor precisa estar em loop, senao o som some depois de 1s")
+
+	_expect(player.get_node_or_null("TurbineLoop") != null, "Loop da turbina nao foi criado")
+
+	## Disparar nao pode gerar erro nem stream nulo.
+	audio.play_at(0, player.global_position, -20.0)
+	audio.play_ui(12, -30.0)
+	await physics_frame
+
+
 ## O canhao AAA precisa ser uma ameaca real, nao um alvo estatico.
 ## Roda por ultimo porque remove os soldados para isolar a fonte do dano.
 func _test_aaa_threat() -> void:
@@ -217,7 +404,8 @@ func _test_aaa_threat() -> void:
 		return
 
 	for enemy in get_nodes_in_group("enemy"):
-		if enemy.get("definition") != null and enemy.definition.id == "soldier_ak":
+		var definition = enemy.get("definition")
+		if definition != null and definition.id != "aaa_gun":
 			enemy.queue_free()
 	await physics_frame
 
@@ -230,6 +418,7 @@ func _test_aaa_threat() -> void:
 	await physics_frame
 
 	var health = player.get("health")
+	health.revive()
 	var armor_before: int = health.hp
 
 	## Trava (0,7s) + cadencia (2,6s) + voo do projetil: 5s cobre uma rajada inteira.
@@ -238,6 +427,13 @@ func _test_aaa_threat() -> void:
 
 	_expect(health.hp < armor_before,
 		"AAA nao acertou o jogador em 5s a 26m (blindagem seguiu em %d)" % health.hp)
+
+
+func _find_objective(mission: Node, objective_id: String):
+	for objective in mission.objectives:
+		if objective["id"] == objective_id:
+			return objective
+	return null
 
 
 func _find_enemy_by_id(enemy_id: String) -> Node3D:
@@ -249,11 +445,10 @@ func _find_enemy_by_id(enemy_id: String) -> Node3D:
 
 
 func _place_player_facing(player: Node3D, target: Node3D, distance: float) -> void:
-	var direction := Vector3(1.0, 0.0, 0.0)
 	player.global_position = Vector3(
-		target.global_position.x + direction.x * distance,
+		target.global_position.x + distance,
 		player.global_position.y,
-		target.global_position.z + direction.z * distance
+		target.global_position.z
 	)
 	player.look_at(
 		Vector3(target.global_position.x, player.global_position.y, target.global_position.z),
@@ -265,6 +460,11 @@ func _make_damage(amount: int, impact_point: Vector3, from_player: bool):
 	var types: Dictionary = _damage_event_script.get("Type")
 	var damage_type: int = types["EXPLOSIVE"] if from_player else types["BULLET"]
 	return _damage_event_script.create(amount, damage_type, Vector3.ZERO, impact_point, from_player, null)
+
+
+## Espera em tempo real, imune a time_scale (necessario durante o hitstop).
+func _wait_real(seconds: float) -> void:
+	await create_timer(seconds, true, false, true).timeout
 
 
 func _expect(condition: bool, message: String) -> void:

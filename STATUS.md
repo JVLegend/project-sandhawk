@@ -3,39 +3,90 @@
 Tags: #GameDev #Execucao #Roadmap #Godot
 
 - Data: 2026-07-29
-- Fases concluidas: `Fase 0`, `Fase 1`, `Fase 2` e `Fase 4`
-- Fase atual recomendada: `Fase 5 · Recursos e resgate`, com o gate da `Fase 3` (feel de voo) ainda em playtest aberto
-- Ultimo marco: combate completo da Fase 4 implementado e verificado por teste headless (3 armas data-driven, mira assistida, 2 tipos de inimigo com maquina de estados, VFX de explosao em camadas, hitstop, HUD de debug)
-- Proximo passo: playtestar o combate na arena de 10 alvos, ajustar tuning de armas/inimigos nos `.tres` e so entao abrir a Fase 5
-- Risco principal aberto: calibrar peso, derrapagem e yaw do voo (gate da Fase 3) e validar se o AAA gera tensao suficiente sem virar frustracao
-- Observacao: `Godot.app` e os `export_templates` 4.7.1 foram instalados no HD externo em `/Volumes/Karine HD Externo`; o `godot` do PATH (Homebrew) tambem e 4.7.1 e foi o usado nesta sessao
+- Fases concluidas: `0` a `8` do `docs/PLANO_EXECUCAO_2026.md`
+- Estado: vertical slice jogavel de ponta a ponta, com briefing, missao completa e debriefing
+- Ultimo marco: passe visual (terreno procedural com shader de areia, iluminacao ACES, helicoptero modelado, VFX em camadas) e passe de audio (16 sons sintetizados em codigo, trilha dinamica em 2 camadas)
+- Proximo passo: playtest de verdade. Ajustar tuning nos `.tres` (voo, armas, inimigos, recursos) a partir do que incomodar em uma sessao completa
+- Risco principal aberto: balanceamento. Os numeros vieram da spec, nao de playtest: fuel, dano do AAA/SAM e tempo de par da missao precisam de ajuste com pessoas reais jogando
+- Observacao: `Godot.app` e os `export_templates` 4.7.1 estao no HD externo em `/Volumes/Karine HD Externo`; o `godot` do PATH (Homebrew) tambem e 4.7.1
 
-## Como validar o projeto
+## Como rodar
+
+```bash
+cd project && godot
+```
+
+Controles: `W A S D` mover · `Q E` girar · `ESPACO` metralhadora · `F` foguetes ·
+`R` misseis · `G` guincho de resgate · `ENTER` avancar telas · `F5` reiniciar.
+Gamepad mapeado nos mesmos comandos.
+
+## Como validar
 
 ```bash
 godot --headless --import                              # reconstroi o cache de classes globais
 godot --headless --check-only --quit                   # checagem de sintaxe
 godot --headless --script tools/smoke_test.gd          # a cena principal carrega
-godot --headless --script tools/combat_smoke_test.gd   # 7 checagens do combate ponta a ponta
-godot --headless --quit-after 240                      # boot real com autoloads, 4s sem erro
-godot res://tools/capture_screenshot.tscn -- /caminho/saida.png explosao
+godot --headless --script tools/combat_smoke_test.gd   # 13 grupos de checagem ponta a ponta
+godot --headless --quit-after 300                      # boot real com autoloads, 5s sem erro
+godot res://tools/capture_screenshot.tscn -- /caminho/saida.png briefing
 ```
 
 > Rodar `--headless --import` e obrigatorio depois de criar qualquer script novo
 > com `class_name`, senao o `--check-only` acusa classe nao encontrada.
 
-## Estado da Fase 4 (combate)
+Modos de captura: `briefing`, `arena`, `explosao`, `base`, `zona:<id>`.
 
-Implementado e coberto por teste:
+## O que existe hoje
 
-- 3 armas data-driven em `data/weapons/` (metralhadora hitscan, foguetes com splash, misseis com homing)
-- mira assistida em cone de 12 graus com marcador visual no alvo travado
-- `Health` + `DamageEvent` compartilhados entre jogador e inimigos
-- soldado AK (idle/alert/attack/flee) e canhao AAA (dorme/trava/rajada) em `actors/enemies/`
-- projeteis com raycast de segmento, sem tunelamento, com rastro de fumaca
-- explosoes em camadas: clarao, bola de fogo, onda de choque, fumaca e destrocos
-- hitstop de 2 frames e trauma de camera no abate
-- arena de teste com 7 soldados + 3 AAA e HUD de debug (municao, blindagem, score, alvos)
+### Voo e camera (Fase 3)
 
-Controles: `W A S D` mover, `Q E` girar, `ESPACO` metralhadora, `F` foguetes,
-`R` misseis, `F5` reiniciar. Gamepad mapeado nos mesmos comandos.
+Helicoptero com inercia, derrapagem, banking e pitch visuais, rotor principal e de
+cauda girando, luzes de navegacao e sombra projetada por `Decal`. Camera isometrica
+ortografica com amortecimento critico, look-ahead pela velocidade, zoom por
+velocidade e trauma para screen shake. Todo o tuning em `data/flight_tuning.tres`.
+
+### Combate (Fase 4)
+
+Tres armas data-driven em `data/weapons/`: metralhadora hitscan com dispersao,
+foguetes com dano em area e misseis com perseguicao. Mira assistida em cone de 12
+graus com marcador no alvo. `Health` e `DamageEvent` compartilhados. Projeteis com
+raycast de segmento, sem tunelamento. Tres inimigos com maquina de estados: soldado
+AK, canhao AAA e lancador SAM, cujo missil e despistavel quebrando a linha de visada.
+
+### Recursos e resgate (Fase 5)
+
+Combustivel com dreno continuo, alarme e queda no zero. Blindagem de 600 sem
+regeneracao. Municao por arma. Pickups de combustivel, blindagem e municao.
+Guincho de resgate que prende o helicoptero por 4 segundos, com capacidade de 6.
+Base amiga que exige pairar sobre o pad e reabastece devagar, criando janela de
+vulnerabilidade. Tuning em `data/resource_tuning.tres`.
+
+### Missao (Fase 6)
+
+`MissionManager` le `data/missions/slice_01.json`, que descreve o mapa inteiro:
+zonas, estruturas, inimigos, resgatados e pickups. Objetivos de destruir, resgatar
+e coletar, com desbloqueio encadeado (o QG so libera depois dos radares). Briefing
+com mapa tatico desenhado em runtime e debriefing com tempo contra o par.
+Criar missao nova e escrever um JSON, sem tocar em codigo.
+
+### Visual (Fase 7)
+
+Terreno de deserto gerado por ruido com cor por vertice (duna, rocha, cascalho,
+argila) e shader proprio de areia com grao, manchas e ondulacoes de vento.
+Iluminacao com tonemap ACES, bloom, SSAO, neblina de distancia e sol com sombras
+em cascata curta. Helicoptero, radares, QG, canhoes e SAM modelados em codigo.
+Explosoes em cinco camadas. Zero asset externo.
+
+### Audio (Fase 8)
+
+16 sons sintetizados amostra por amostra em `audio/audio_synth.gd`: loops de rotor
+e turbina com pitch ligado a velocidade, guincho, armas, explosoes por tamanho,
+impactos, alarmes e sons de interface. Trilha em duas camadas com crossfade por
+"calor de combate". Buses `Master > Music / SFX / UI` com compressor no master.
+
+## Debitos conhecidos
+
+- Balanceamento nao passou por playtest com terceiros
+- Vila neutra ainda nao penaliza o jogador que atira nela
+- Sem save/checkpoint (previsto para depois do slice)
+- Uma unica missao; a campanha e trabalho futuro

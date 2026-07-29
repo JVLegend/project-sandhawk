@@ -24,6 +24,9 @@ func reset_score() -> void:
 
 
 ## Congela o jogo por alguns frames. Da peso ao abate sem custar animacao.
+##
+## O timer precisa ignorar o time_scale (ultimo argumento), senao ele fica preso
+## no proprio congelamento e o jogo nunca volta a rodar.
 func hitstop(frames: int = 2) -> void:
 	if _hitstop_active or frames <= 0:
 		return
@@ -31,8 +34,7 @@ func hitstop(frames: int = 2) -> void:
 	_hitstop_active = true
 	Engine.time_scale = 0.0
 
-	for _i in frames:
-		await get_tree().process_frame
+	await get_tree().create_timer(float(frames) / 60.0, true, false, true).timeout
 
 	Engine.time_scale = 1.0
 	_hitstop_active = false

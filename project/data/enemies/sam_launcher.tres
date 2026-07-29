@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/enemies/enemy_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sam_launcher"
+display_name = "Lancador SAM"
+max_hp = 25
+score_value = 260
+move_speed = 0.0
+flee_speed = 0.0
+flee_at_hp = 0
+detection_range = 95.0
+attack_range = 85.0
+attack_damage = 45
+attack_cooldown = 5.2
+burst_count = 1
+burst_interval = 0.2
+projectile_speed = 24.0
+lock_on_time = 1.5
+requires_line_of_sight = true
+projectile_homing_turn_rate = 52.0
+projectile_splash_radius = 4.5
+projectile_splash_damage = 20
+body_color = Color(0.352941, 0.376471, 0.32549, 1)
+body_size = Vector3(3, 1.4, 4)
+explosion_scale = 1.6

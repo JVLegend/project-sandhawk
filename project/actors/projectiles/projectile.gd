@@ -36,12 +36,23 @@ func setup(definition: WeaponDefinition, start_direction: Vector3, shooter_is_pl
 
 
 ## Usado pelos inimigos, que nao tem WeaponDefinition.
-func setup_simple(p_speed: float, p_damage: int, start_direction: Vector3, p_color: Color, p_range: float) -> void:
+func setup_simple(
+	p_speed: float,
+	p_damage: int,
+	start_direction: Vector3,
+	p_color: Color,
+	p_range: float,
+	p_homing_target: Node3D = null,
+	p_homing_turn_rate: float = 0.0,
+	p_splash_radius: float = 0.0,
+	p_splash_damage: int = 0
+) -> void:
 	speed = p_speed
 	damage = p_damage
-	splash_radius = 0.0
-	splash_damage = 0
-	homing_turn_rate = 0.0
+	splash_radius = p_splash_radius
+	splash_damage = p_splash_damage
+	homing_target = p_homing_target
+	homing_turn_rate = p_homing_turn_rate
 	body_color = p_color
 	direction = start_direction.normalized()
 	from_player = false
@@ -81,7 +92,14 @@ func _update_homing(delta: float) -> void:
 	if homing_turn_rate <= 0.0 or homing_target == null or not is_instance_valid(homing_target):
 		return
 
-	var desired := (CombatUtils.aim_point_for(homing_target) - global_position).normalized()
+	var target_point := CombatUtils.aim_point_for(homing_target)
+
+	## Quebrar linha de visada despista o missil: e a defesa do jogador contra o SAM.
+	if not from_player and not CombatUtils.has_line_of_sight(get_world_3d(), global_position, target_point):
+		homing_target = null
+		return
+
+	var desired := (target_point - global_position).normalized()
 	var max_turn := deg_to_rad(homing_turn_rate) * delta
 	var angle := direction.angle_to(desired)
 

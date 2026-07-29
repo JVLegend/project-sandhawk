@@ -117,6 +117,14 @@ func spawn_impact(position: Vector3, normal: Vector3, color: Color) -> void:
 
 ## Explosao em camadas: clarao, bola de fogo, onda de choque, fumaca e destrocos.
 func spawn_explosion(position: Vector3, scale_factor: float = 1.0) -> void:
+	## O som mora aqui para que nenhuma explosao possa nascer muda.
+	AudioManager.play_at(
+		AudioManager.Sfx.EXPLOSION_BIG if scale_factor >= 1.0 else AudioManager.Sfx.EXPLOSION_SMALL,
+		position,
+		clampf(-6.0 + scale_factor * 4.0, -6.0, 2.0),
+		0.1
+	)
+
 	_spawn_flash_sphere(position, 1.6 * scale_factor, Color(1.0, 0.95, 0.75, 0.95), 0.14)
 	_spawn_fireball(position, scale_factor)
 	_spawn_shockwave(position, scale_factor)

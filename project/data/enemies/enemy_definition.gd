@@ -28,6 +28,10 @@ extends Resource
 ## Tempo de travamento antes do primeiro tiro, em segundos.
 @export var lock_on_time: float = 0.0
 @export var requires_line_of_sight: bool = true
+## Acima de zero o projetil persegue o jogador nessa taxa de curva (graus/s).
+@export var projectile_homing_turn_rate: float = 0.0
+@export var projectile_splash_radius: float = 0.0
+@export var projectile_splash_damage: int = 0
 
 @export_group("Visual")
 @export var body_color: Color = Color("b4443c")

@@ -157,6 +157,9 @@ func _shoot_once() -> void:
 	var muzzle := get_aim_point() + Vector3.UP * definition.body_size.y * 0.3
 	var direction := (CombatUtils.aim_point_for(_player) - muzzle).normalized()
 
+	AudioManager.play_at(AudioManager.Sfx.ENEMY_SHOT, muzzle, -7.0)
+	AudioManager.report_combat()
+
 	if definition.projectile_speed > 0.0:
 		_shoot_projectile(muzzle, direction)
 	else:
@@ -198,15 +201,20 @@ func _shoot_hitscan(muzzle: Vector3, direction: Vector3) -> void:
 
 
 func _shoot_projectile(muzzle: Vector3, direction: Vector3) -> void:
-	var spread_direction := CombatUtils.apply_spread(direction, 1.8)
+	var homing := definition.projectile_homing_turn_rate > 0.0
+	var spread_direction := CombatUtils.apply_spread(direction, 0.4 if homing else 1.8)
 
 	var projectile := PROJECTILE_SCENE.instantiate() as Projectile
 	projectile.setup_simple(
 		definition.projectile_speed,
 		definition.attack_damage,
 		spread_direction,
-		Color(1.0, 0.5, 0.24),
-		definition.attack_range * 1.4
+		Color(0.86, 0.9, 1.0) if homing else Color(1.0, 0.5, 0.24),
+		definition.attack_range * 1.4,
+		_player if homing else null,
+		definition.projectile_homing_turn_rate,
+		definition.projectile_splash_radius,
+		definition.projectile_splash_damage
 	)
 	projectile.source = self
 

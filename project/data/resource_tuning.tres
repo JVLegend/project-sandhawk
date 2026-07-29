@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="ResourceTuning" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/resource_tuning.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+fuel_max = 100.0
+fuel_drain_per_second = 1.0
+fuel_warning_threshold = 25.0
+fuel_critical_threshold = 10.0
+fuel_pickup_amount = 50.0
+armor_max = 600
+armor_pickup_amount = 200
+pad_radius = 9.0
+pad_max_speed = 2.5
+pad_hold_seconds = 2.0
+refuel_seconds = 10.0
+winch_descend_seconds = 2.0
+winch_ascend_seconds = 2.0
+winch_max_speed = 3.0
+rescue_radius = 5.0
+passenger_capacity = 6
+rescue_score = 150
+delivery_score_bonus = 100
+delivery_armor_bonus = 40
+ammo_pickup_machinegun = 400
+ammo_pickup_rockets = 12
+ammo_pickup_missiles = 3

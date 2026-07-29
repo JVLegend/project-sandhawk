@@ -1,222 +1,256 @@
 extends Node3D
 
-const GROUND_SIZE := Vector2(220.0, 220.0)
-const FLIGHT_TUNING := preload("res://data/flight_tuning.tres")
-const HELICOPTER_SCENE := preload("res://actors/helicopter/placeholder_helicopter.tscn")
-const CAMERA_RIG_SCENE := preload("res://game/camera_follow_rig.tscn")
-const GROUND_SHADER := preload("res://world/terrain/grid_ground.gdshader")
+## Raiz do jogo: mapeia os controles, carrega a missao e conduz o fluxo
+## briefing -> voo -> debriefing. O mundo em si e montado pelo MissionWorld a
+## partir dos dados da missao, entao este arquivo nao conhece o mapa.
 
-const SOLDIER_SCENE := preload("res://actors/enemies/soldier_enemy.tscn")
-const AAA_SCENE := preload("res://actors/enemies/aaa_turret.tscn")
-const SOLDIER_DEFINITION := preload("res://data/enemies/soldier_ak.tres")
-const AAA_DEFINITION := preload("res://data/enemies/aaa_gun.tres")
+const MISSION_PATH := "res://data/missions/slice_01.json"
 
-## Arena de teste da Fase 4: 7 soldados + 3 canhoes AAA = 10 alvos.
-const SOLDIER_POSITIONS := [
-	Vector2(24.0, -26.0),
-	Vector2(-30.0, 18.0),
-	Vector2(10.0, 40.0),
-	Vector2(-18.0, -42.0),
-	Vector2(44.0, 8.0),
-	Vector2(-46.0, -8.0),
-	Vector2(0.0, 58.0),
-]
+enum Phase {
+	BRIEFING,
+	FLYING,
+	DEBRIEFING,
+}
 
-const AAA_POSITIONS := [
-	Vector2(38.0, -40.0),
-	Vector2(-42.0, 36.0),
-	Vector2(52.0, 44.0),
-]
+var phase: int = Phase.BRIEFING
+
+var _world: MissionWorld
+var _hud: Hud
+var _briefing: BriefingScreen
+var _debriefing: DebriefingScreen
+var _player: PlayerHelicopter
 
 
 func _ready() -> void:
 	Engine.max_fps = 0
 	Engine.time_scale = 1.0
+
 	_ensure_runtime_input_map()
-	_ensure_world_environment()
-	_ensure_sun()
-	_ensure_ground()
-	_ensure_obstacle_course()
-	_ensure_enemies()
-	var helicopter = _ensure_helicopter()
-	_ensure_camera(helicopter)
-	_ensure_hud(helicopter)
+
+	if not MissionManager.load_mission(MISSION_PATH):
+		push_error("Nao foi possivel carregar a missao. Encerrando.")
+		return
+
+	MissionManager.mission_completed.connect(_on_mission_completed)
+	MissionManager.mission_failed.connect(_on_mission_failed)
+
+	_show_briefing()
+
+
+func _process(_delta: float) -> void:
+	if phase == Phase.FLYING:
+		_update_waypoint()
+		_refresh_objectives()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("debug_restart"):
-		GameState.reset_score()
-		Engine.time_scale = 1.0
-		get_tree().reload_current_scene()
+		_restart()
 
 
-func _ensure_world_environment() -> void:
-	if get_node_or_null("WorldEnvironment") != null:
+## ---------------------------------------------------------------- fluxo
+
+func _show_briefing() -> void:
+	phase = Phase.BRIEFING
+
+	_briefing = BriefingScreen.new()
+	_briefing.name = "BriefingScreen"
+	_briefing.dismissed.connect(_on_briefing_dismissed)
+	add_child(_briefing)
+
+
+## Pula o briefing e entra direto no voo. Usado pelas ferramentas de teste e
+## de captura, que precisam do mundo montado sem interacao.
+func skip_briefing() -> void:
+	if phase != Phase.BRIEFING:
+		return
+	_on_briefing_dismissed()
+
+
+func _on_briefing_dismissed() -> void:
+	if _briefing != null:
+		_briefing.queue_free()
+		_briefing = null
+
+	_start_flight()
+
+
+func _start_flight() -> void:
+	phase = Phase.FLYING
+	GameState.reset_score()
+
+	_world = MissionWorld.new()
+	_world.name = "MissionWorld"
+	add_child(_world)
+	_world.build(MissionManager.get_world_data())
+
+	_player = _world.player
+	_player.destroyed.connect(_on_player_destroyed)
+
+	_hud = Hud.new()
+	_hud.name = "Hud"
+	add_child(_hud)
+	_hud.setup(_player)
+	_hud.connect_base(_world.base)
+
+	_world.base.passengers_delivered.connect(MissionManager.notify_rescued_delivered)
+	MissionManager.objective_completed.connect(_on_objective_completed)
+
+	AudioManager.attach_to_player(_player)
+	AudioManager.start_music()
+
+	MissionManager.start()
+	_refresh_objectives()
+
+
+func _on_player_destroyed(_reason: String) -> void:
+	MissionManager.notify_player_lost()
+
+
+func _on_objective_completed(objective_id: String) -> void:
+	if _hud == null:
 		return
 
-	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color("7ab7e8")
-	sky_material.sky_horizon_color = Color("f4d08f")
-	sky_material.ground_bottom_color = Color("b0804d")
-	sky_material.ground_horizon_color = Color("d0aa72")
+	AudioManager.play_ui(AudioManager.Sfx.OBJECTIVE, -5.0)
 
-	var sky := Sky.new()
-	sky.sky_material = sky_material
-
-	var environment := Environment.new()
-	environment.background_mode = Environment.BG_SKY
-	environment.sky = sky
-	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("f3dcc0")
-	environment.ambient_light_energy = 0.6
-
-	var world_environment := WorldEnvironment.new()
-	world_environment.name = "WorldEnvironment"
-	world_environment.environment = environment
-	add_child(world_environment)
+	for objective in MissionManager.objectives:
+		if objective["id"] == objective_id:
+			_hud.show_message("OBJETIVO CONCLUIDO: %s" % objective["label"].to_upper(), 3.0, Hud.COLOR_GREEN)
+			return
 
 
-func _ensure_sun() -> void:
-	if get_node_or_null("Sun") != null:
+func _on_mission_completed(stats: Dictionary) -> void:
+	_show_debriefing(stats, true, "")
+
+
+func _on_mission_failed(reason: String) -> void:
+	_show_debriefing(MissionManager.build_stats(), false, reason)
+
+
+func _show_debriefing(stats: Dictionary, success: bool, reason: String) -> void:
+	if phase == Phase.DEBRIEFING:
 		return
 
-	var sun := DirectionalLight3D.new()
-	sun.name = "Sun"
-	sun.light_energy = 2.2
-	sun.shadow_enabled = true
-	sun.rotation_degrees = Vector3(-52.0, 28.0, 0.0)
-	add_child(sun)
+	phase = Phase.DEBRIEFING
+
+	if _hud != null:
+		_hud.visible = false
+
+	AudioManager.stop_music()
+
+	_debriefing = DebriefingScreen.new()
+	_debriefing.name = "DebriefingScreen"
+	add_child(_debriefing)
+	_debriefing.setup(stats, success, reason)
+	_debriefing.restart_requested.connect(_restart)
 
 
-func _ensure_ground() -> void:
-	if get_node_or_null("Ground") != null:
+func _restart() -> void:
+	MissionManager.stop()
+	GameState.reset_score()
+	Engine.time_scale = 1.0
+	get_tree().reload_current_scene()
+
+
+## ---------------------------------------------------------------- HUD
+
+func _refresh_objectives() -> void:
+	if _hud == null:
 		return
 
-	var mesh := PlaneMesh.new()
-	mesh.size = GROUND_SIZE
-	mesh.subdivide_depth = 2
-	mesh.subdivide_width = 2
+	var lines: Array[String] = []
+	for objective in MissionManager.get_visible_objectives():
+		var mark := "x" if objective["done"] else " "
+		var suffix := ""
+		if objective["type"] == "rescue":
+			suffix = "  %d/%d" % [objective["progress"], objective["target_count"]]
+		elif objective["type"] == "destroy":
+			var total: int = objective["pending"].size()
+			if total > 0:
+				suffix = "  faltam %d" % total
+		lines.append("[%s] %s%s" % [mark, objective["label"], suffix])
 
-	var material := ShaderMaterial.new()
-	material.shader = GROUND_SHADER
-
-	var ground := MeshInstance3D.new()
-	ground.name = "Ground"
-	ground.mesh = mesh
-	ground.material_override = material
-	add_child(ground)
-
-	## Sem corpo de colisao, tiros e linha de visada atravessariam o chao.
-	var ground_body := StaticBody3D.new()
-	ground_body.name = "GroundCollision"
-	ground_body.collision_layer = CombatLayers.WORLD
-	ground_body.collision_mask = 0
-
-	var ground_shape := CollisionShape3D.new()
-	var ground_box := BoxShape3D.new()
-	ground_box.size = Vector3(GROUND_SIZE.x, 2.0, GROUND_SIZE.y)
-	ground_shape.shape = ground_box
-	ground_shape.position = Vector3(0.0, -1.0, 0.0)
-	ground_body.add_child(ground_shape)
-	ground.add_child(ground_body)
+	_hud.set_objectives(lines)
 
 
-func _ensure_obstacle_course() -> void:
-	if get_node_or_null("ObstacleCourse") != null:
+## Aponta para o proximo passo real da missao, nao apenas para o inimigo mais perto.
+func _update_waypoint() -> void:
+	if _hud == null or _player == null or not is_instance_valid(_player):
 		return
 
-	var course := Node3D.new()
-	course.name = "ObstacleCourse"
-	add_child(course)
+	var carrying: bool = _player.winch != null and _player.winch.has_passengers()
+	var full: bool = _player.winch != null and _player.winch.passengers >= _player.winch.tuning.passenger_capacity
 
-	_add_obstacle(course, Vector3(18.0, 7.0, -12.0), Vector3(4.5, 14.0, 4.5), Color("8a8f97"))
-	_add_obstacle(course, Vector3(-22.0, 9.5, 10.0), Vector3(5.5, 19.0, 5.5), Color("787d86"))
-	_add_obstacle(course, Vector3(14.0, 6.0, 28.0), Vector3(3.0, 12.0, 9.0), Color("8a8f97"))
-	_add_obstacle(course, Vector3(-14.0, 8.0, -30.0), Vector3(7.0, 16.0, 3.5), Color("70757d"))
+	for objective in MissionManager.get_visible_objectives():
+		if objective["done"]:
+			continue
 
-	_add_obstacle(course, Vector3(34.0, 3.0, 0.0), Vector3(2.0, 6.0, 28.0), Color("5f636a"))
-	_add_obstacle(course, Vector3(-34.0, 3.0, 0.0), Vector3(2.0, 6.0, 28.0), Color("5f636a"))
+		match objective["type"]:
+			"destroy":
+				var structure := _find_structure(objective["pending"])
+				if structure != null:
+					_hud.set_waypoint(structure.global_position, objective["label"])
+					return
 
+			"rescue":
+				var pows := get_tree().get_nodes_in_group("pow")
+				if full or (pows.is_empty() and carrying):
+					_hud.set_waypoint(_world.base.global_position, "entregar resgatados na base")
+					return
+				if not pows.is_empty():
+					var nearest := _nearest(pows)
+					if nearest != null:
+						_hud.set_waypoint(nearest.global_position, objective["label"])
+						return
 
-func _ensure_helicopter():
-	var helicopter = get_node_or_null("PlayerHelicopter")
-	if helicopter == null:
-		helicopter = HELICOPTER_SCENE.instantiate()
-		helicopter.name = "PlayerHelicopter"
-		add_child(helicopter)
+			"collect":
+				var item := _find_pickup(objective["pending"])
+				if item != null:
+					_hud.set_waypoint(item.global_position, objective["label"])
+					return
 
-	helicopter.setup(FLIGHT_TUNING)
-	helicopter.global_position = Vector3(0.0, FLIGHT_TUNING.hover_altitude, 0.0)
-	helicopter.mark_spawn_point()
-	return helicopter
-
-
-func _ensure_camera(helicopter) -> void:
-	var rig = get_node_or_null("CameraRig")
-	if rig == null:
-		rig = CAMERA_RIG_SCENE.instantiate()
-		rig.name = "CameraRig"
-		add_child(rig)
-
-	rig.configure(helicopter, FLIGHT_TUNING)
-
-
-func _add_obstacle(parent: Node3D, obstacle_position: Vector3, size: Vector3, color: Color) -> void:
-	var body := StaticBody3D.new()
-	body.position = obstacle_position
-	body.collision_layer = CombatLayers.WORLD
-	body.collision_mask = 0
-	parent.add_child(body)
-
-	var obstacle := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = size
-	obstacle.mesh = mesh
-
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.9
-	material.metallic = 0.05
-	obstacle.material_override = material
-	body.add_child(obstacle)
-
-	var shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = size
-	shape.shape = box
-	body.add_child(shape)
-
-
-func _ensure_enemies() -> void:
-	if get_node_or_null("Enemies") != null:
+	if carrying:
+		_hud.set_waypoint(_world.base.global_position, "entregar resgatados na base")
 		return
 
-	var container := Node3D.new()
-	container.name = "Enemies"
-	add_child(container)
-
-	for spot in SOLDIER_POSITIONS:
-		var soldier := SOLDIER_SCENE.instantiate()
-		container.add_child(soldier)
-		soldier.global_position = Vector3(spot.x, SOLDIER_DEFINITION.body_size.y * 0.5 + 0.05, spot.y)
-		soldier.setup(SOLDIER_DEFINITION)
-
-	for spot in AAA_POSITIONS:
-		var turret := AAA_SCENE.instantiate()
-		container.add_child(turret)
-		turret.global_position = Vector3(spot.x, AAA_DEFINITION.body_size.y * 0.5 + 0.05, spot.y)
-		turret.setup(AAA_DEFINITION)
+	_hud.set_waypoint(_world.base.global_position, "voltar para a base")
 
 
-func _ensure_hud(helicopter) -> void:
-	if get_node_or_null("DebugHud") != null:
-		return
+func _find_structure(pending: Array) -> Node3D:
+	for node in get_tree().get_nodes_in_group("structure"):
+		var structure := node as Structure
+		if structure == null or not structure.is_alive():
+			continue
+		if pending.has(structure.structure_id):
+			return structure
+	return null
 
-	var hud := DebugCombatHud.new()
-	hud.name = "DebugHud"
-	add_child(hud)
-	hud.setup(helicopter)
 
+func _find_pickup(pending: Array) -> Node3D:
+	for node in get_tree().get_nodes_in_group("pickup"):
+		var pickup := node as Pickup
+		if pickup != null and pending.has(pickup.item_id):
+			return pickup
+	return null
+
+
+func _nearest(nodes: Array) -> Node3D:
+	var best: Node3D = null
+	var best_distance := INF
+
+	for node in nodes:
+		var candidate := node as Node3D
+		if candidate == null or not is_instance_valid(candidate):
+			continue
+		var distance := candidate.global_position.distance_to(_player.global_position)
+		if distance < best_distance:
+			best_distance = distance
+			best = candidate
+
+	return best
+
+
+## ---------------------------------------------------------------- input
 
 func _ensure_runtime_input_map() -> void:
 	_register_action("move_forward", [
@@ -261,6 +295,10 @@ func _ensure_runtime_input_map() -> void:
 		_make_key_event(KEY_R),
 		_make_mouse_event(MOUSE_BUTTON_MIDDLE),
 		_make_joy_button_event(JOY_BUTTON_Y)
+	])
+	_register_action("winch", [
+		_make_key_event(KEY_G),
+		_make_joy_button_event(JOY_BUTTON_A)
 	])
 	_register_action("debug_restart", [
 		_make_key_event(KEY_F5)

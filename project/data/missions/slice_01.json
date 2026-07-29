@@ -1,0 +1,116 @@
+{
+  "id": "slice_01",
+  "name": "Tempestade no Deserto de Ferro",
+  "briefing": [
+    "Situacao: uma coluna inimiga ocupou o vale de Kharun e cortou a rota de suprimento.",
+    "Dois radares no planalto leste cegam nossa aviacao. Derrube os dois antes de qualquer outra coisa.",
+    "Quatro tripulantes nossos foram abatidos e estao no acampamento a noroeste. Traga todos de volta.",
+    "Com os radares no chao, o quartel-general fica exposto. Derrube o QG e a operacao acaba.",
+    "Atencao: a vila de Kharun e neutra. Civis. Nao dispare sobre ela.",
+    "Combustivel e blindagem se recuperam apenas na base. Pairar sobre o pad reabastece tudo, mas voce fica parado."
+  ],
+  "objectives": [
+    {
+      "id": "radar",
+      "label": "Destruir os dois radares",
+      "type": "destroy",
+      "targets": ["radar_1", "radar_2"],
+      "required": true
+    },
+    {
+      "id": "pows",
+      "label": "Resgatar 4 tripulantes e entregar na base",
+      "type": "rescue",
+      "count": 4,
+      "required": true
+    },
+    {
+      "id": "hq",
+      "label": "Destruir o quartel-general",
+      "type": "destroy",
+      "targets": ["hq"],
+      "required": true,
+      "locked_by": ["radar"]
+    },
+    {
+      "id": "intel",
+      "label": "Recuperar os documentos capturados",
+      "type": "collect",
+      "targets": ["intel_1"],
+      "required": false
+    }
+  ],
+  "debriefing": {
+    "par_time_sec": 600
+  },
+  "world": {
+    "seed": 20260729,
+    "size": 900.0,
+    "amplitude": 5.5,
+    "base": [0.0, 0.0],
+    "spawn": [0.0, 24.0],
+    "scatter": {
+      "rocks": 150,
+      "dead_trees": 45
+    },
+    "zones": [
+      {"id": "village", "label": "Vila Kharun", "kind": "village", "position": [-190.0, -130.0], "radius": 56.0, "houses": 9, "palms": 12},
+      {"id": "radar_field", "label": "Planalto do radar", "kind": "outpost", "position": [230.0, -170.0], "radius": 58.0},
+      {"id": "pow_camp", "label": "Acampamento de prisioneiros", "kind": "camp", "position": [-250.0, 210.0], "radius": 52.0, "tents": 5},
+      {"id": "hq_compound", "label": "Quartel-general", "kind": "outpost", "position": [270.0, 250.0], "radius": 70.0},
+      {"id": "depot", "label": "Deposito avancado", "kind": "camp", "position": [150.0, 60.0], "radius": 38.0, "tents": 3}
+    ],
+    "structures": [
+      {"id": "radar_1", "kind": "radar", "position": [212.0, -188.0]},
+      {"id": "radar_2", "kind": "radar", "position": [254.0, -148.0]},
+      {"id": "hq", "kind": "hq", "position": [270.0, 250.0]},
+      {"id": "depot_tanks", "kind": "depot", "position": [152.0, 58.0]}
+    ],
+    "enemies": [
+      {"kind": "aaa_gun", "position": [236.0, -206.0]},
+      {"kind": "soldier_ak", "position": [206.0, -160.0]},
+      {"kind": "soldier_ak", "position": [244.0, -178.0]},
+      {"kind": "soldier_ak", "position": [222.0, -206.0]},
+
+      {"kind": "aaa_gun", "position": [-232.0, 188.0]},
+      {"kind": "soldier_ak", "position": [-256.0, 186.0]},
+      {"kind": "soldier_ak", "position": [-224.0, 222.0]},
+      {"kind": "soldier_ak", "position": [-268.0, 232.0]},
+      {"kind": "soldier_ak", "position": [-244.0, 246.0]},
+
+      {"kind": "aaa_gun", "position": [238.0, 226.0]},
+      {"kind": "aaa_gun", "position": [302.0, 228.0]},
+      {"kind": "sam_launcher", "position": [274.0, 300.0]},
+      {"kind": "soldier_ak", "position": [252.0, 268.0]},
+      {"kind": "soldier_ak", "position": [292.0, 268.0]},
+      {"kind": "soldier_ak", "position": [270.0, 214.0]},
+      {"kind": "soldier_ak", "position": [306.0, 262.0]},
+
+      {"kind": "sam_launcher", "position": [104.0, -84.0]},
+      {"kind": "soldier_ak", "position": [140.0, 44.0]},
+      {"kind": "soldier_ak", "position": [166.0, 74.0]},
+      {"kind": "soldier_ak", "position": [-96.0, 118.0]},
+      {"kind": "soldier_ak", "position": [58.0, -132.0]}
+    ],
+    "pows": [
+      [-262.0, 204.0],
+      [-240.0, 196.0],
+      [-236.0, 224.0],
+      [-258.0, 228.0]
+    ],
+    "pickups": [
+      {"kind": "fuel", "position": [118.0, -96.0]},
+      {"kind": "fuel", "position": [-140.0, 128.0]},
+      {"kind": "fuel", "position": [196.0, 160.0]},
+      {"kind": "fuel", "position": [-84.0, -70.0]},
+      {"kind": "armor", "position": [156.0, -120.0]},
+      {"kind": "armor", "position": [-176.0, 176.0]},
+      {"kind": "ammo_machinegun", "position": [92.0, 42.0]},
+      {"kind": "ammo_machinegun", "position": [-118.0, 66.0]},
+      {"kind": "ammo_rockets", "position": [178.0, -142.0]},
+      {"kind": "ammo_rockets", "position": [214.0, 196.0]},
+      {"kind": "ammo_missiles", "position": [-64.0, 154.0]},
+      {"kind": "intel", "id": "intel_1", "position": [148.0, 66.0]}
+    ]
+  }
+}

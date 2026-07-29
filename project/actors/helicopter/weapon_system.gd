@@ -55,6 +55,29 @@ func refill_all() -> void:
 		ammo_changed.emit(slot, runtime.ammo, runtime.definition.max_ammo)
 
 
+func add_ammo(slot: int, amount: int) -> void:
+	var runtime := get_runtime(slot)
+	if runtime == null or amount <= 0:
+		return
+
+	runtime.ammo = mini(runtime.definition.max_ammo, runtime.ammo + amount)
+	ammo_changed.emit(slot, runtime.ammo, runtime.definition.max_ammo)
+
+
+## Repoe uma fracao da capacidade de cada arma. Usado no reabastecimento gradual.
+func refill_fraction(ratio: float) -> void:
+	if ratio <= 0.0:
+		return
+
+	for slot in runtimes.size():
+		var runtime := runtimes[slot]
+		if runtime.ammo >= runtime.definition.max_ammo:
+			continue
+		var amount := int(ceil(float(runtime.definition.max_ammo) * ratio))
+		runtime.ammo = mini(runtime.definition.max_ammo, runtime.ammo + amount)
+		ammo_changed.emit(slot, runtime.ammo, runtime.definition.max_ammo)
+
+
 func _physics_process(delta: float) -> void:
 	if _shooter == null:
 		return
@@ -97,8 +120,21 @@ func _fire(slot: int, runtime: WeaponRuntime) -> void:
 	Vfx.spawn_muzzle_flash(_shooter, definition.muzzle_offset, definition.tracer_color, 0.42)
 	get_tree().call_group("camera_rig", "add_trauma", definition.trauma)
 
+	AudioManager.play_at(_sfx_for(definition.mode), muzzle_global, -4.0)
+	AudioManager.report_combat()
+
 	ammo_changed.emit(slot, runtime.ammo, definition.max_ammo)
 	weapon_fired.emit(slot)
+
+
+func _sfx_for(mode: int) -> int:
+	match mode:
+		WeaponDefinition.Mode.PROJECTILE:
+			return AudioManager.Sfx.ROCKET
+		WeaponDefinition.Mode.HOMING:
+			return AudioManager.Sfx.MISSILE
+		_:
+			return AudioManager.Sfx.MACHINEGUN
 
 
 func _aim_direction(muzzle_global: Vector3, definition: WeaponDefinition) -> Vector3:
