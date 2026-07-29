@@ -36,13 +36,14 @@ var _combat_heat := 0.0
 var _carrier: Node3D
 var _enabled := true
 var _active_players: Array[Dictionary] = []
+var _music_thread: Thread
 
 
 func _ready() -> void:
 	_setup_buses()
 	_build_streams()
-	_build_music()
 	_build_ui_player()
+	_start_music_render()
 
 
 ## Os loops de rotor, turbina, guincho e trilha tocam ate o fim do processo.
@@ -55,6 +56,8 @@ func _exit_tree() -> void:
 ## Publico porque o smoke test roda em modo --script e encerra com quit(),
 ## que atropela a ordem normal de desligamento dos autoloads.
 func release_all() -> void:
+	_finish_music_render()
+
 	var persistent := [_rotor_player, _turbine_player, _winch_player, _music_calm, _music_combat, _ui_player]
 
 	for entry in _active_players:
@@ -94,10 +97,33 @@ func attach_to_player(player: Node3D) -> void:
 
 
 func start_music() -> void:
+	_finish_music_render()
+
 	if _music_calm != null and not _music_calm.playing:
 		_music_calm.play()
 	if _music_combat != null and not _music_combat.playing:
 		_music_combat.play()
+
+
+## O tema e uma composicao inteira renderizada nota a nota: ~1,9 s de CPU. Feito
+## no _ready isso viraria tela preta no boot, entao roda em thread enquanto o
+## jogador le o briefing. start_music() so espera se ela ainda nao terminou.
+func _start_music_render() -> void:
+	_music_thread = Thread.new()
+	_music_thread.start(_render_music_layers)
+
+
+func _render_music_layers() -> Array:
+	return [AudioSynth.music_layer(false), AudioSynth.music_layer(true)]
+
+
+func _finish_music_render() -> void:
+	if _music_thread == null:
+		return
+
+	var layers: Array = _music_thread.wait_to_finish()
+	_music_thread = null
+	_build_music(layers[0], layers[1])
 
 
 func stop_music() -> void:
@@ -289,17 +315,17 @@ func _build_streams() -> void:
 	_streams["ui_click"] = AudioSynth.ui_click()
 
 
-func _build_music() -> void:
+func _build_music(calm_stream: AudioStream, combat_stream: AudioStream) -> void:
 	_music_calm = AudioStreamPlayer.new()
 	_music_calm.name = "MusicCalm"
-	_music_calm.stream = AudioSynth.music_layer(false)
+	_music_calm.stream = calm_stream
 	_music_calm.bus = "Music"
 	_music_calm.volume_db = -16.0
 	add_child(_music_calm)
 
 	_music_combat = AudioStreamPlayer.new()
 	_music_combat.name = "MusicCombat"
-	_music_combat.stream = AudioSynth.music_layer(true)
+	_music_combat.stream = combat_stream
 	_music_combat.bus = "Music"
 	_music_combat.volume_db = -60.0
 	add_child(_music_combat)

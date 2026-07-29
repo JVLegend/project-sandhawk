@@ -266,42 +266,10 @@ static func winch_loop() -> AudioStreamWAV:
 	return _to_stream(buffer, true)
 
 
-## Cama harmonica de tensao. Duas versoes: exploracao e combate.
+## Tema militar de 16 bits. A composicao mora em MusicTracker; aqui fica so a
+## porta de entrada, para o AudioManager nao precisar saber de tracker nenhum.
 static func music_layer(intense: bool) -> AudioStreamWAV:
-	var duration := 8.0
-	var samples := _samples_for(duration)
-	var buffer := PackedFloat32Array()
-	buffer.resize(samples)
-
-	## Frequencias multiplas de 1/8s fecham o loop sem estalo.
-	var root := 55.0
-	var voices := [1.0, 1.5, 2.0, 3.0] if intense else [1.0, 1.5, 2.0]
-	var pulse_rate := 2.0 if intense else 0.5
-
-	for index in samples:
-		var t := float(index) / float(MIX_RATE)
-		var signal_value := 0.0
-
-		for voice_index in voices.size():
-			var ratio: float = voices[voice_index]
-			var detune := 1.0 + 0.0015 * float(voice_index)
-			var amplitude := 0.5 / float(voice_index + 1)
-			signal_value += sin(TAU * root * ratio * detune * t) * amplitude
-
-		## Pulso lento que respira: sem isso o drone fica morto.
-		var pulse := 0.62 + 0.38 * sin(TAU * pulse_rate * t)
-		signal_value *= pulse
-
-		if intense:
-			## Batida grave marcando o combate.
-			var beat_phase := fmod(t * 2.0, 1.0)
-			signal_value += sin(TAU * 48.0 * t) * exp(-beat_phase * 9.0) * 0.55
-
-		## Fade nas pontas garante emenda limpa mesmo com o pulso.
-		var edge := minf(1.0, minf(t, duration - t) * 6.0)
-		buffer[index] = clampf(signal_value * 0.22 * edge, -1.0, 1.0)
-
-	return _to_stream(buffer, true)
+	return MusicTracker.render(intense)
 
 
 ## ---------------------------------------------------------------- internos
