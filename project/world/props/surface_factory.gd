@@ -80,6 +80,55 @@ static func make_ground_overlay_material(
 	return material
 
 
+static func make_track_overlay_material(
+	base_color: Color,
+	seed: int,
+	uv_scale: Vector3 = Vector3(4.4, 4.4, 4.4),
+	alpha: float = 0.78
+) -> StandardMaterial3D:
+	var accent := base_color.lightened(0.04)
+	var dust := base_color.darkened(0.1)
+	var texture := _make_track_texture(base_color, accent, dust, seed)
+
+	var material := _make_material(texture, 0.98, 0.0, uv_scale)
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(1.0, 1.0, 1.0, alpha)
+	return material
+
+
+static func make_burn_mark_material(
+	base_color: Color,
+	seed: int,
+	uv_scale: Vector3 = Vector3(2.8, 2.8, 2.8),
+	alpha: float = 0.82
+) -> StandardMaterial3D:
+	var accent := base_color.lightened(0.02)
+	var ash := base_color.darkened(0.24)
+	var texture := _make_burn_texture(base_color, accent, ash, seed)
+
+	var material := _make_material(texture, 1.0, 0.0, uv_scale)
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(1.0, 1.0, 1.0, alpha)
+	return material
+
+
+static func make_painted_marking_material(
+	paint_color: Color,
+	seed: int,
+	uv_scale: Vector3 = Vector3(2.8, 2.8, 2.8),
+	alpha: float = 0.95
+) -> StandardMaterial3D:
+	var texture := _make_marking_texture(paint_color, paint_color.lightened(0.08), paint_color.darkened(0.16), seed)
+
+	var material := _make_material(texture, 0.92, 0.0, uv_scale)
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(1.0, 1.0, 1.0, alpha)
+	return material
+
+
 static func _make_material(texture: Texture2D, roughness: float, metallic: float, uv_scale: Vector3) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_texture = texture
@@ -167,6 +216,61 @@ static func _make_roof_texture(base: Color, accent: Color, dust: Color, seed: in
 			var color := base.lerp(accent, 0.08 + corrugation * 0.14 + grain * 0.06)
 			color = color.lerp(dust, 0.08 + dust_noise * 0.14 + seam)
 			image.set_pixel(x, y, color)
+
+	return ImageTexture.create_from_image(image)
+
+
+static func _make_track_texture(base: Color, accent: Color, dust: Color, seed: int) -> Texture2D:
+	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+
+	for y in TEXTURE_SIZE:
+		for x in TEXTURE_SIZE:
+			var lane_a := exp(-pow((float(x) - TEXTURE_SIZE * 0.28) / (TEXTURE_SIZE * 0.12), 2.0))
+			var lane_b := exp(-pow((float(x) - TEXTURE_SIZE * 0.72) / (TEXTURE_SIZE * 0.12), 2.0))
+			var streak := maxf(lane_a, lane_b)
+			var wear := _hash_2d(x / 4, y / 6, seed + 33)
+			var break_up := _hash_2d(x / 10, y / 12, seed + 51)
+			var alpha := clampf(streak * (0.45 + wear * 0.45) * (0.72 + break_up * 0.28), 0.0, 1.0)
+
+			var color := base.lerp(accent, wear * 0.18)
+			color = color.lerp(dust, break_up * 0.24)
+			image.set_pixel(x, y, Color(color.r, color.g, color.b, alpha))
+
+	return ImageTexture.create_from_image(image)
+
+
+static func _make_burn_texture(base: Color, accent: Color, ash: Color, seed: int) -> Texture2D:
+	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	var center := Vector2(TEXTURE_SIZE, TEXTURE_SIZE) * 0.5
+	var radius := TEXTURE_SIZE * 0.48
+
+	for y in TEXTURE_SIZE:
+		for x in TEXTURE_SIZE:
+			var p := Vector2(x, y)
+			var distance := p.distance_to(center) / radius
+			var edge_noise := _hash_2d(x / 5, y / 5, seed + 61)
+			var ring := clampf(1.0 - smoothstep(0.38 + edge_noise * 0.08, 1.0, distance), 0.0, 1.0)
+			var crater := clampf(smoothstep(0.0, 0.52, distance), 0.0, 1.0)
+			var alpha := ring * (0.28 + crater * 0.72)
+
+			var color := ash.lerp(base, crater * 0.35).lerp(accent, edge_noise * 0.08)
+			image.set_pixel(x, y, Color(color.r, color.g, color.b, alpha))
+
+	return ImageTexture.create_from_image(image)
+
+
+static func _make_marking_texture(base: Color, accent: Color, worn: Color, seed: int) -> Texture2D:
+	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+
+	for y in TEXTURE_SIZE:
+		for x in TEXTURE_SIZE:
+			var center_band := 1.0 - smoothstep(TEXTURE_SIZE * 0.18, TEXTURE_SIZE * 0.34, absf(float(x) - TEXTURE_SIZE * 0.5))
+			var chips := _hash_2d(x / 3, y / 3, seed + 75)
+			var edge := _hash_2d(x / 8, y / 8, seed + 93)
+			var alpha := clampf(center_band * (0.82 + edge * 0.18) * (0.45 + chips * 0.55), 0.0, 1.0)
+
+			var color := base.lerp(accent, edge * 0.14).lerp(worn, (1.0 - chips) * 0.18)
+			image.set_pixel(x, y, Color(color.r, color.g, color.b, alpha))
 
 	return ImageTexture.create_from_image(image)
 

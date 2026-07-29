@@ -1,6 +1,7 @@
 class_name FriendlyBase
 extends Node3D
 
+const PROP_FACTORY := preload("res://world/props/prop_factory.gd")
 const SURFACE_FACTORY := preload("res://world/props/surface_factory.gd")
 
 ## Base amiga: pairar sobre o pad por alguns segundos entrega os resgatados e
@@ -154,6 +155,8 @@ func _update_pad_visual() -> void:
 
 func _build_visual() -> void:
 	var radius := 9.0 if tuning == null else tuning.pad_radius
+	var dressing_rng := RandomNumberGenerator.new()
+	dressing_rng.seed = 77231
 
 	var pad := MeshInstance3D.new()
 	pad.name = "Pad"
@@ -187,15 +190,32 @@ func _build_visual() -> void:
 	_pad_ring.material_override = ring_material
 	add_child(_pad_ring)
 
+	_add_pad_ring_marking(radius)
 	_add_pad_marking(Vector3(-1.6, 0.32, 0.0), Vector3(0.5, 0.05, 4.0))
 	_add_pad_marking(Vector3(1.6, 0.32, 0.0), Vector3(0.5, 0.05, 4.0))
 	_add_pad_marking(Vector3(0.0, 0.32, 0.0), Vector3(3.2, 0.05, 0.5))
+	_add_painted_strip(Vector3(-6.2, 0.32, -7.2), Vector3(0.45, 0.04, 7.4), deg_to_rad(18.0), Color(0.86, 0.84, 0.74), 6111)
+	_add_painted_strip(Vector3(-6.9, 0.32, -10.9), Vector3(3.8, 0.04, 0.42), deg_to_rad(18.0), Color(0.86, 0.84, 0.74), 6127)
 
 	_add_building(Vector3(radius + 5.0, 0.0, -3.0), Vector3(6.0, 3.4, 8.0), Color(0.36, 0.37, 0.32))
 	_add_building(Vector3(-radius - 4.5, 0.0, 4.0), Vector3(5.0, 2.6, 5.0), Color(0.31, 0.33, 0.28))
 	_add_fuel_tank(Vector3(-radius - 4.0, 0.0, -6.0))
 	_add_fuel_tank(Vector3(-radius - 6.6, 0.0, -6.0))
 	_add_antenna(Vector3(radius + 8.0, 0.0, 2.8))
+
+	var crates := PROP_FACTORY.make_supply_crate_stack(dressing_rng, 2, 2, 2)
+	add_child(crates)
+	crates.position = Vector3(radius + 2.8, 0.0, 5.6)
+	crates.rotation.y = deg_to_rad(-22.0)
+
+	var canopy := PROP_FACTORY.make_cloth_canopy(dressing_rng, 3.8, 2.8, Color(0.62, 0.56, 0.38))
+	add_child(canopy)
+	canopy.position = Vector3(-radius - 5.4, 0.0, 8.2)
+	canopy.rotation.y = deg_to_rad(14.0)
+
+	var signal_post := PROP_FACTORY.make_signal_post(dressing_rng, Color(0.94, 0.93, 0.84), 4.2)
+	add_child(signal_post)
+	signal_post.position = Vector3(radius + 10.2, 0.0, -7.8)
 
 
 func _add_pad_marking(marking_position: Vector3, size: Vector3) -> void:
@@ -204,12 +224,33 @@ func _add_pad_marking(marking_position: Vector3, size: Vector3) -> void:
 	mesh.size = size
 	marking.mesh = mesh
 	marking.position = marking_position
-
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.86, 0.87, 0.84)
-	material.roughness = 0.9
-	marking.material_override = material
+	marking.material_override = SURFACE_FACTORY.make_painted_marking_material(Color(0.9, 0.88, 0.8), int(marking_position.x * 211.0 + marking_position.z * 149.0), Vector3(2.2, 2.2, 2.2), 0.96)
 	add_child(marking)
+
+
+func _add_pad_ring_marking(radius: float) -> void:
+	var stripe := MeshInstance3D.new()
+	stripe.name = "PadPaintStripe"
+	var torus := TorusMesh.new()
+	torus.inner_radius = radius * 0.67
+	torus.outer_radius = radius * 0.72
+	torus.rings = 8
+	torus.ring_segments = 36
+	stripe.mesh = torus
+	stripe.position = Vector3(0.0, 0.325, 0.0)
+	stripe.material_override = SURFACE_FACTORY.make_painted_marking_material(Color(0.92, 0.9, 0.82), 6053, Vector3(2.8, 2.8, 2.8), 0.92)
+	add_child(stripe)
+
+
+func _add_painted_strip(marking_position: Vector3, size: Vector3, rotation_y: float, color: Color, seed: int) -> void:
+	var strip := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	strip.mesh = mesh
+	strip.position = marking_position
+	strip.rotation.y = rotation_y
+	strip.material_override = SURFACE_FACTORY.make_painted_marking_material(color, seed, Vector3(2.6, 2.6, 2.6), 0.9)
+	add_child(strip)
 
 
 func _add_building(building_position: Vector3, size: Vector3, color: Color) -> void:

@@ -364,6 +364,13 @@ func _build_village(container: Node3D, zone: Dictionary, center: Vector2) -> voi
 		SURFACE_FACTORY.make_ground_overlay_material(Color(0.74, 0.67, 0.51), seed + 23, Vector3(3.2, 3.2, 3.2), 0.94),
 		0.07
 	)
+	_add_cross_tracks(
+		container,
+		center,
+		radius * 1.4,
+		SURFACE_FACTORY.make_track_overlay_material(Color(0.56, 0.49, 0.37), seed + 27, Vector3(4.8, 4.8, 4.8), 0.72),
+		0.052
+	)
 
 	for index in houses:
 		var angle := TAU * float(index) / float(houses) + _rng.randf_range(-0.25, 0.25)
@@ -394,6 +401,10 @@ func _build_village(container: Node3D, zone: Dictionary, center: Vector2) -> voi
 		container.add_child(crates)
 		crates.global_position = _ground_point(center + offset + Vector2(1.8, -1.2))
 
+	var post := PropFactory.make_signal_post(_rng, Color(0.28, 0.62, 0.24), 4.0)
+	container.add_child(post)
+	post.global_position = _ground_point(center + Vector2(radius * 0.1, -radius * 0.36))
+
 
 func _build_outpost(container: Node3D, zone: Dictionary, center: Vector2) -> void:
 	var radius := float(zone.get("radius", 45.0)) * 0.8
@@ -406,6 +417,20 @@ func _build_outpost(container: Node3D, zone: Dictionary, center: Vector2) -> voi
 		Vector2(radius * 1.12, radius * 1.12),
 		SURFACE_FACTORY.make_ground_overlay_material(Color(0.44, 0.39, 0.31), seed + 31, Vector3(4.0, 4.0, 4.0), 0.9),
 		0.045
+	)
+	_add_cross_tracks(
+		container,
+		center,
+		radius * 1.3,
+		SURFACE_FACTORY.make_track_overlay_material(Color(0.32, 0.29, 0.25), seed + 35, Vector3(4.2, 4.2, 4.2), 0.78),
+		0.05
+	)
+	_add_burn_mark(
+		container,
+		center + Vector2(radius * 0.16, -radius * 0.1),
+		Vector2(radius * 0.26, radius * 0.2),
+		SURFACE_FACTORY.make_burn_mark_material(Color(0.16, 0.15, 0.14), seed + 39, Vector3(2.6, 2.6, 2.6), 0.86),
+		0.052
 	)
 
 	for index in segments:
@@ -429,9 +454,30 @@ func _build_outpost(container: Node3D, zone: Dictionary, center: Vector2) -> voi
 		container.add_child(crates)
 		crates.global_position = _ground_point(center + offset)
 
+	var fuel_rack := PropFactory.make_fuel_tank_rack(_rng, 2)
+	container.add_child(fuel_rack)
+	fuel_rack.global_position = _ground_point(center + Vector2(radius * 0.22, radius * 0.2))
+	fuel_rack.rotation.y = deg_to_rad(-18.0)
+
 	var barrels := PropFactory.make_barrel_cluster(_rng, 4)
 	container.add_child(barrels)
 	barrels.global_position = _ground_point(center + Vector2(0.0, radius * 0.26))
+
+	for offset in [Vector2(0.0, radius * 0.5), Vector2(0.0, -radius * 0.5)]:
+		var barricade := PropFactory.make_sandbag_barricade(6, _rng)
+		container.add_child(barricade)
+		barricade.global_position = _ground_point(center + offset)
+		barricade.rotation.y = PI * 0.5
+
+	## "signal" e palavra reservada do GDScript e nao pode nomear variavel.
+	var signal_post := PropFactory.make_signal_post(_rng, Color(0.8, 0.16, 0.12), 5.2)
+	container.add_child(signal_post)
+	signal_post.global_position = _ground_point(center + Vector2(-radius * 0.12, radius * 0.18))
+
+	var radar := PropFactory.make_radar_dish(_rng, 3.4)
+	container.add_child(radar)
+	radar.global_position = _ground_point(center + Vector2(-radius * 0.28, -radius * 0.1))
+	radar.rotation.y = deg_to_rad(138.0)
 
 
 func _build_camp(container: Node3D, zone: Dictionary, center: Vector2) -> void:
@@ -444,6 +490,13 @@ func _build_camp(container: Node3D, zone: Dictionary, center: Vector2) -> void:
 		Vector2(radius * 1.22, radius * 1.08),
 		SURFACE_FACTORY.make_ground_overlay_material(Color(0.52, 0.43, 0.31), seed + 41, Vector3(4.2, 4.2, 4.2), 0.88),
 		0.04
+	)
+	_add_cross_tracks(
+		container,
+		center,
+		radius * 1.18,
+		SURFACE_FACTORY.make_track_overlay_material(Color(0.42, 0.36, 0.2), seed + 43, Vector3(4.2, 4.2, 4.2), 0.66),
+		0.048
 	)
 
 	for index in int(zone.get("tents", 5)):
@@ -466,6 +519,15 @@ func _build_camp(container: Node3D, zone: Dictionary, center: Vector2) -> void:
 	var barrels := PropFactory.make_barrel_cluster(_rng, 3)
 	container.add_child(barrels)
 	barrels.global_position = _ground_point(center + Vector2(-radius * 0.24, radius * 0.12))
+
+	var generator := PropFactory.make_generator(_rng)
+	container.add_child(generator)
+	generator.global_position = _ground_point(center + Vector2(-radius * 0.34, -radius * 0.2))
+
+	var fuel_rack := PropFactory.make_fuel_tank_rack(_rng, 2)
+	container.add_child(fuel_rack)
+	fuel_rack.global_position = _ground_point(center + Vector2(radius * 0.18, radius * 0.28))
+	fuel_rack.rotation.y = deg_to_rad(-28.0)
 
 
 func _build_scatter(world_data: Dictionary) -> void:
@@ -620,6 +682,52 @@ func _add_base_grounding(world_data: Dictionary) -> void:
 	road.material_override = SURFACE_FACTORY.make_ground_overlay_material(Color(0.47, 0.41, 0.31), seed + 63, Vector3(3.2, 3.2, 3.2), 0.92)
 	add_child(road)
 
+	var road_tracks := MeshInstance3D.new()
+	road_tracks.name = "BaseTracks"
+	var road_tracks_mesh := BoxMesh.new()
+	road_tracks_mesh.size = Vector3(9.8, 0.03, 27.2)
+	road_tracks.mesh = road_tracks_mesh
+	road_tracks.position = road.position + Vector3(0.0, 0.022, 0.0)
+	road_tracks.rotation = road.rotation
+	road_tracks.material_override = SURFACE_FACTORY.make_track_overlay_material(Color(0.28, 0.25, 0.22), seed + 69, Vector3(3.4, 3.4, 3.4), 0.84)
+	add_child(road_tracks)
+
+	var landing_wear := MeshInstance3D.new()
+	landing_wear.name = "LandingWear"
+	var landing_mesh := CylinderMesh.new()
+	landing_mesh.top_radius = 13.2
+	landing_mesh.bottom_radius = 13.2
+	landing_mesh.height = 0.03
+	landing_mesh.radial_segments = 32
+	landing_wear.mesh = landing_mesh
+	landing_wear.position = _ground_point(base_center) + Vector3(0.0, 0.052, 0.0)
+	landing_wear.material_override = SURFACE_FACTORY.make_burn_mark_material(Color(0.23, 0.21, 0.18), seed + 73, Vector3(3.8, 3.8, 3.8), 0.58)
+	add_child(landing_wear)
+
+	for offset in [Vector2(-14.0, -9.5), Vector2(-12.2, -2.0)]:
+		var barricade := PropFactory.make_sandbag_barricade(5, _rng)
+		add_child(barricade)
+		barricade.global_position = _ground_point(base_center + offset)
+		barricade.rotation.y = deg_to_rad(18.0)
+
+	var generator := PropFactory.make_generator(_rng)
+	add_child(generator)
+	generator.global_position = _ground_point(base_center + Vector2(11.5, -6.4))
+
+	var post := PropFactory.make_signal_post(_rng, Color(0.96, 0.95, 0.88), 4.8)
+	add_child(post)
+	post.global_position = _ground_point(base_center + Vector2(14.5, 7.0))
+
+	var radar := PropFactory.make_radar_dish(_rng, 4.0)
+	add_child(radar)
+	radar.global_position = _ground_point(base_center + Vector2(16.8, -7.8))
+	radar.rotation.y = deg_to_rad(112.0)
+
+	var fuel_rack := PropFactory.make_fuel_tank_rack(_rng, 3)
+	add_child(fuel_rack)
+	fuel_rack.global_position = _ground_point(base_center + Vector2(-15.4, 10.8))
+	fuel_rack.rotation.y = deg_to_rad(12.0)
+
 
 func _add_ground_patch(container: Node3D, center: Vector2, radius: Vector2, material: Material, y_offset: float = 0.03) -> void:
 	var patch := MeshInstance3D.new()
@@ -634,6 +742,33 @@ func _add_ground_patch(container: Node3D, center: Vector2, radius: Vector2, mate
 	patch.rotation.y = _rng.randf_range(0.0, TAU)
 	patch.material_override = material
 	container.add_child(patch)
+
+
+func _add_cross_tracks(container: Node3D, center: Vector2, length: float, material: Material, y_offset: float = 0.04) -> void:
+	for rotation_degrees in [0.0, 90.0]:
+		var strip := MeshInstance3D.new()
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(2.8, 0.03, length)
+		strip.mesh = mesh
+		strip.position = _ground_point(center) + Vector3(0.0, y_offset, 0.0)
+		strip.rotation.y = deg_to_rad(rotation_degrees + _rng.randf_range(-8.0, 8.0))
+		strip.material_override = material
+		container.add_child(strip)
+
+
+func _add_burn_mark(container: Node3D, center: Vector2, radius: Vector2, material: Material, y_offset: float = 0.045) -> void:
+	var mark := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 1.0
+	mesh.bottom_radius = 1.0
+	mesh.height = 0.03
+	mesh.radial_segments = 24
+	mark.mesh = mesh
+	mark.scale = Vector3(radius.x, 1.0, radius.y)
+	mark.position = _ground_point(center) + Vector3(0.0, y_offset, 0.0)
+	mark.rotation.y = _rng.randf_range(0.0, TAU)
+	mark.material_override = material
+	container.add_child(mark)
 
 
 func _too_close_to_gameplay(spot: Vector2, margin: float) -> bool:

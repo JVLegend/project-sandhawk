@@ -394,3 +394,211 @@ static func make_cloth_canopy(rng: RandomNumberGenerator, width: float = 3.2, de
 	root.add_child(cloth)
 
 	return root
+
+
+static func make_sandbag_barricade(length: int, rng: RandomNumberGenerator) -> Node3D:
+	var root := Node3D.new()
+	root.name = "SandbagBarricade"
+	var material := SURFACE_FACTORY.make_plaster_material(Color(0.68, 0.61, 0.45), int(rng.randi()), Vector3(2.2, 2.2, 2.2))
+
+	for index in length:
+		var bag := MeshInstance3D.new()
+		var mesh := SphereMesh.new()
+		mesh.radius = 0.38
+		mesh.height = 0.54
+		mesh.radial_segments = 8
+		mesh.rings = 4
+		bag.mesh = mesh
+		bag.scale = Vector3(1.32, 0.82, 0.88)
+		bag.position = Vector3((float(index) - float(length - 1) * 0.5) * 0.72, 0.22, rng.randf_range(-0.08, 0.08))
+		bag.rotation = Vector3(rng.randf_range(-0.08, 0.08), rng.randf_range(-0.14, 0.14), rng.randf_range(-0.08, 0.08))
+		bag.material_override = material
+		root.add_child(bag)
+
+	return root
+
+
+static func make_signal_post(rng: RandomNumberGenerator, flag_color: Color = Color(0.78, 0.16, 0.12), height: float = 4.6) -> Node3D:
+	var root := Node3D.new()
+	root.name = "SignalPost"
+
+	var pole_material := SURFACE_FACTORY.make_metal_material(Color(0.36, 0.36, 0.34), int(rng.randi()), Vector3(2.8, 2.8, 2.8), 0.24, 0.68)
+	var flag_material := SURFACE_FACTORY.make_roof_material(flag_color, int(rng.randi()), Vector3(2.0, 2.0, 2.0))
+
+	var pole := MeshInstance3D.new()
+	var pole_mesh := CylinderMesh.new()
+	pole_mesh.top_radius = 0.08
+	pole_mesh.bottom_radius = 0.1
+	pole_mesh.height = height
+	pole_mesh.radial_segments = 6
+	pole.mesh = pole_mesh
+	pole.position = Vector3(0.0, height * 0.5, 0.0)
+	pole.material_override = pole_material
+	root.add_child(pole)
+
+	var arm := MeshInstance3D.new()
+	var arm_mesh := BoxMesh.new()
+	arm_mesh.size = Vector3(1.45, 0.08, 0.08)
+	arm.mesh = arm_mesh
+	arm.position = Vector3(0.68, height - 0.18, 0.0)
+	arm.material_override = pole_material
+	root.add_child(arm)
+
+	var flag := MeshInstance3D.new()
+	var flag_mesh := BoxMesh.new()
+	flag_mesh.size = Vector3(1.15, 0.6, 0.06)
+	flag.mesh = flag_mesh
+	flag.position = Vector3(1.18, height - 0.52, 0.0)
+	flag.rotation_degrees = Vector3(rng.randf_range(-4.0, 4.0), 0.0, rng.randf_range(-10.0, 10.0))
+	flag.material_override = flag_material
+	root.add_child(flag)
+
+	return root
+
+
+static func make_generator(rng: RandomNumberGenerator) -> Node3D:
+	var root := Node3D.new()
+	root.name = "Generator"
+
+	var body_material := SURFACE_FACTORY.make_metal_material(Color(0.46, 0.49, 0.36), int(rng.randi()), Vector3(2.2, 2.2, 2.2), 0.18, 0.72)
+	var dark_material := SURFACE_FACTORY.make_metal_material(Color(0.22, 0.23, 0.22), int(rng.randi()), Vector3(2.2, 2.2, 2.2), 0.18, 0.78)
+
+	var body := MeshInstance3D.new()
+	var body_mesh := BoxMesh.new()
+	body_mesh.size = Vector3(2.2, 1.35, 1.26)
+	body.mesh = body_mesh
+	body.position = Vector3(0.0, 0.68, 0.0)
+	body.material_override = body_material
+	root.add_child(body)
+
+	for side in [-1.0, 1.0]:
+		var vent := MeshInstance3D.new()
+		var vent_mesh := BoxMesh.new()
+		vent_mesh.size = Vector3(0.1, 0.82, 0.82)
+		vent.mesh = vent_mesh
+		vent.position = Vector3(side * 1.12, 0.72, 0.0)
+		vent.material_override = dark_material
+		root.add_child(vent)
+
+	var exhaust := MeshInstance3D.new()
+	var exhaust_mesh := CylinderMesh.new()
+	exhaust_mesh.top_radius = 0.1
+	exhaust_mesh.bottom_radius = 0.12
+	exhaust_mesh.height = 0.9
+	exhaust_mesh.radial_segments = 6
+	exhaust.mesh = exhaust_mesh
+	exhaust.position = Vector3(-0.64, 1.76, -0.22)
+	exhaust.material_override = dark_material
+	root.add_child(exhaust)
+
+	return root
+
+
+static func make_radar_dish(rng: RandomNumberGenerator, mast_height: float = 3.8) -> Node3D:
+	var root := Node3D.new()
+	root.name = "RadarDish"
+
+	var mast_material := SURFACE_FACTORY.make_metal_material(Color(0.42, 0.43, 0.4), int(rng.randi()), Vector3(2.8, 2.8, 2.8), 0.26, 0.62)
+	var dish_material := SURFACE_FACTORY.make_metal_material(Color(0.56, 0.57, 0.53), int(rng.randi()), Vector3(3.0, 3.0, 3.0), 0.18, 0.54)
+
+	var base := MeshInstance3D.new()
+	var base_mesh := CylinderMesh.new()
+	base_mesh.top_radius = 0.7
+	base_mesh.bottom_radius = 0.82
+	base_mesh.height = 0.46
+	base_mesh.radial_segments = 10
+	base.mesh = base_mesh
+	base.position = Vector3(0.0, 0.23, 0.0)
+	base.material_override = mast_material
+	root.add_child(base)
+
+	var mast := MeshInstance3D.new()
+	var mast_mesh := CylinderMesh.new()
+	mast_mesh.top_radius = 0.12
+	mast_mesh.bottom_radius = 0.16
+	mast_mesh.height = mast_height
+	mast_mesh.radial_segments = 8
+	mast.mesh = mast_mesh
+	mast.position = Vector3(0.0, 0.46 + mast_height * 0.5, 0.0)
+	mast.material_override = mast_material
+	root.add_child(mast)
+
+	var arm_pivot := Node3D.new()
+	arm_pivot.position = Vector3(0.0, mast_height + 0.38, 0.0)
+	arm_pivot.rotation_degrees = Vector3(rng.randf_range(-18.0, -8.0), rng.randf_range(0.0, 360.0), 0.0)
+	root.add_child(arm_pivot)
+
+	var arm := MeshInstance3D.new()
+	var arm_mesh := BoxMesh.new()
+	arm_mesh.size = Vector3(0.16, 0.16, 1.5)
+	arm.mesh = arm_mesh
+	arm.position = Vector3(0.0, 0.0, 0.72)
+	arm.material_override = mast_material
+	arm_pivot.add_child(arm)
+
+	var dish := MeshInstance3D.new()
+	var dish_mesh := SphereMesh.new()
+	dish_mesh.radius = 1.28
+	dish_mesh.height = 0.42
+	dish_mesh.radial_segments = 14
+	dish_mesh.rings = 6
+	dish.mesh = dish_mesh
+	dish.position = Vector3(0.0, 0.0, 1.66)
+	dish.rotation_degrees = Vector3(-78.0, 0.0, 0.0)
+	dish.scale = Vector3(1.0, 0.32, 1.0)
+	dish.material_override = dish_material
+	arm_pivot.add_child(dish)
+
+	var feed := MeshInstance3D.new()
+	var feed_mesh := BoxMesh.new()
+	feed_mesh.size = Vector3(0.14, 0.14, 0.5)
+	feed.mesh = feed_mesh
+	feed.position = Vector3(0.0, 0.0, 1.24)
+	feed.material_override = mast_material
+	arm_pivot.add_child(feed)
+
+	return root
+
+
+static func make_fuel_tank_rack(rng: RandomNumberGenerator, tank_count: int = 2) -> Node3D:
+	var root := Node3D.new()
+	root.name = "FuelTankRack"
+
+	var rack_material := SURFACE_FACTORY.make_metal_material(Color(0.34, 0.33, 0.31), int(rng.randi()), Vector3(2.4, 2.4, 2.4), 0.24, 0.7)
+	var tank_material := SURFACE_FACTORY.make_metal_material(Color(0.54, 0.5, 0.38), int(rng.randi()), Vector3(2.8, 2.8, 2.8), 0.2, 0.58)
+
+	var spacing := 2.35
+	for x_sign in [-1.0, 1.0]:
+		for z_sign in [-1.0, 1.0]:
+			var leg := MeshInstance3D.new()
+			var leg_mesh := BoxMesh.new()
+			leg_mesh.size = Vector3(0.16, 0.92, 0.16)
+			leg.mesh = leg_mesh
+			leg.position = Vector3(x_sign * (float(tank_count - 1) * spacing * 0.5 + 0.68), 0.46, z_sign * 0.76)
+			leg.material_override = rack_material
+			root.add_child(leg)
+
+	for index in tank_count:
+		var x_offset := (float(index) - float(tank_count - 1) * 0.5) * spacing
+
+		var support := MeshInstance3D.new()
+		var support_mesh := BoxMesh.new()
+		support_mesh.size = Vector3(1.58, 0.14, 1.72)
+		support.mesh = support_mesh
+		support.position = Vector3(x_offset, 1.02, 0.0)
+		support.material_override = rack_material
+		root.add_child(support)
+
+		var tank := MeshInstance3D.new()
+		var tank_mesh := CylinderMesh.new()
+		tank_mesh.top_radius = 0.58
+		tank_mesh.bottom_radius = 0.58
+		tank_mesh.height = 1.72
+		tank_mesh.radial_segments = 12
+		tank.mesh = tank_mesh
+		tank.position = Vector3(x_offset, 1.68, 0.0)
+		tank.rotation_degrees = Vector3(0.0, 0.0, 90.0)
+		tank.material_override = tank_material
+		root.add_child(tank)
+
+	return root
