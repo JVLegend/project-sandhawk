@@ -1,6 +1,8 @@
 class_name FriendlyBase
 extends Node3D
 
+const SURFACE_FACTORY := preload("res://world/props/surface_factory.gd")
+
 ## Base amiga: pairar sobre o pad por alguns segundos entrega os resgatados e
 ## reabastece tudo devagar. A lentidao e proposital: reabastecer e uma escolha
 ## de risco, nao um botao.
@@ -163,9 +165,7 @@ func _build_visual() -> void:
 	pad.mesh = pad_mesh
 	pad.position = Vector3(0.0, 0.15, 0.0)
 
-	var pad_material := StandardMaterial3D.new()
-	pad_material.albedo_color = Color(0.24, 0.25, 0.26)
-	pad_material.roughness = 0.95
+	var pad_material := SURFACE_FACTORY.make_concrete_material(Color(0.24, 0.25, 0.26), 4101, Vector3(3.0, 3.0, 3.0))
 	pad.material_override = pad_material
 	add_child(pad)
 
@@ -195,6 +195,7 @@ func _build_visual() -> void:
 	_add_building(Vector3(-radius - 4.5, 0.0, 4.0), Vector3(5.0, 2.6, 5.0), Color(0.31, 0.33, 0.28))
 	_add_fuel_tank(Vector3(-radius - 4.0, 0.0, -6.0))
 	_add_fuel_tank(Vector3(-radius - 6.6, 0.0, -6.0))
+	_add_antenna(Vector3(radius + 8.0, 0.0, 2.8))
 
 
 func _add_pad_marking(marking_position: Vector3, size: Vector3) -> void:
@@ -223,11 +224,17 @@ func _add_building(building_position: Vector3, size: Vector3, color: Color) -> v
 	mesh.size = size
 	mesh_instance.mesh = mesh
 
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.92
+	var material := SURFACE_FACTORY.make_concrete_material(color, int(size.x * 83.0 + size.z * 59.0), Vector3(2.8, 2.8, 2.8))
 	mesh_instance.material_override = material
 	body.add_child(mesh_instance)
+
+	var roof := MeshInstance3D.new()
+	var roof_mesh := BoxMesh.new()
+	roof_mesh.size = Vector3(size.x + 0.5, 0.26, size.z + 0.5)
+	roof.mesh = roof_mesh
+	roof.position = Vector3(0.0, size.y * 0.5 + 0.24, 0.0)
+	roof.material_override = SURFACE_FACTORY.make_roof_material(color.lightened(0.08), int(size.y * 211.0), Vector3(3.2, 3.2, 3.2))
+	body.add_child(roof)
 
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
@@ -246,9 +253,28 @@ func _add_fuel_tank(tank_position: Vector3) -> void:
 	tank.mesh = mesh
 	tank.position = tank_position + Vector3(0.0, 1.5, 0.0)
 
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.5, 0.47, 0.35)
-	material.metallic = 0.3
-	material.roughness = 0.6
+	var material := SURFACE_FACTORY.make_metal_material(Color(0.5, 0.47, 0.35), int(tank_position.x * 31.0 + tank_position.z * 29.0), Vector3(2.8, 2.8, 2.8), 0.3, 0.6)
 	tank.material_override = material
 	add_child(tank)
+
+
+func _add_antenna(antenna_position: Vector3) -> void:
+	var mast := MeshInstance3D.new()
+	var mast_mesh := CylinderMesh.new()
+	mast_mesh.top_radius = 0.1
+	mast_mesh.bottom_radius = 0.14
+	mast_mesh.height = 6.8
+	mast_mesh.radial_segments = 8
+	mast.mesh = mast_mesh
+	mast.position = antenna_position + Vector3(0.0, 3.4, 0.0)
+	mast.material_override = SURFACE_FACTORY.make_metal_material(Color(0.42, 0.42, 0.4), 9021, Vector3(4.0, 4.0, 4.0), 0.42, 0.5)
+	add_child(mast)
+
+	for offset in [1.6, 3.2, 4.8]:
+		var cross := MeshInstance3D.new()
+		var cross_mesh := BoxMesh.new()
+		cross_mesh.size = Vector3(1.8, 0.08, 0.08)
+		cross.mesh = cross_mesh
+		cross.position = antenna_position + Vector3(0.0, offset, 0.0)
+		cross.material_override = mast.material_override
+		add_child(cross)

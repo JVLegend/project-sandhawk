@@ -29,10 +29,13 @@ uniform float normal_strength = 1.5;
 uniform float roughness_min = 0.72;
 uniform float roughness_max = 0.99;
 
+// O fade tem de comecar DEPOIS do alcance visivel (~125m nesta camera). Se
+// comecar antes, a transicao vira uma faixa horizontal reta atravessando a
+// tela, porque em camera ortografica distancia constante e uma linha na tela.
 uniform float ripple_scale = 1.25;
 uniform float ripple_strength = 0.07;
-uniform float detail_fade_start = 42.0;
-uniform float detail_fade_end = 95.0;
+uniform float detail_fade_start = 145.0;
+uniform float detail_fade_end = 260.0;
 
 varying vec3 world_position;
 varying vec3 world_normal;

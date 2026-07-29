@@ -9,6 +9,7 @@ signal player_spawned(player: PlayerHelicopter)
 
 const FLIGHT_TUNING := preload("res://data/flight_tuning.tres")
 const RESOURCE_TUNING := preload("res://data/resource_tuning.tres")
+const SURFACE_FACTORY := preload("res://world/props/surface_factory.gd")
 const HELICOPTER_SCENE := preload("res://actors/helicopter/player_helicopter.tscn")
 const CAMERA_RIG_SCENE := preload("res://game/camera_follow_rig.tscn")
 const POW_SCENE := preload("res://actors/pow/pow.tscn")
@@ -41,6 +42,8 @@ func build(world_data: Dictionary) -> void:
 	_build_environment()
 	_build_sun()
 	_build_terrain(world_data)
+	_build_horizon(world_data)
+	_build_atmospherics(world_data)
 	_build_zones(world_data)
 	_build_scatter(world_data)
 	_build_base(world_data)
@@ -96,11 +99,28 @@ func _build_environment() -> void:
 	environment.glow_bloom = 0.08
 	environment.glow_hdr_threshold = 1.1
 	environment.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
+	environment.set("glow_levels/2", 0.78)
+	environment.set("glow_levels/3", 0.22)
 
 	environment.ssao_enabled = true
 	environment.ssao_radius = 1.6
 	environment.ssao_intensity = 1.1
 	environment.ssao_light_affect = 0.12
+	## SSIL fica DESLIGADO por medicao, nao por gosto: custava 1,02 ms de um frame
+	## de 6,42 ms (16%) e mudava 0,25% dos pixels. Numa cena aberta de deserto,
+	## com sol direcional forte e pouca geometria para rebater luz, nao ha o que
+	## ele acrescente. Ver tools/perf_probe.tscn para refazer a medicao.
+	environment.ssil_enabled = false
+
+	## SDFGI custa caro (2,02 ms) mas muda 7,66% da imagem, entao fica. Cascatas
+	## reduzidas e celula maior: a camera e distante e o relevo e suave, entao
+	## resolucao fina de GI e desperdicio.
+	environment.sdfgi_enabled = true
+	environment.sdfgi_cascades = 2
+	environment.sdfgi_min_cell_size = 3.2
+	environment.sdfgi_energy = 0.85
+	environment.sdfgi_normal_bias = 0.65
+	environment.sdfgi_probe_bias = 1.2
 
 	## Neblina quente da distancia: da profundidade e esconde a borda do mapa.
 	## Densidade baixa de proposito. Nevoa de altura fica desligada: com a camera
@@ -109,9 +129,20 @@ func _build_environment() -> void:
 	environment.fog_light_color = Color(0.82, 0.74, 0.58)
 	environment.fog_light_energy = 1.0
 	environment.fog_sun_scatter = 0.2
-	environment.fog_density = 0.0026
+	## Densidades recalibradas depois de afastar a camera: com o dobro de
+	## distancia ate o alvo, a densidade antiga saturava a cena inteira em marrom.
+	environment.fog_density = 0.0015
 	environment.fog_sky_affect = 0.12
 	environment.fog_height_density = 0.0
+	environment.volumetric_fog_enabled = true
+	environment.volumetric_fog_density = 0.0022
+	## O volume precisa passar do alcance visivel, senao a borda dele aparece
+	## como uma faixa reta atravessando a tela.
+	environment.volumetric_fog_length = 200.0
+	environment.volumetric_fog_albedo = Color(0.85, 0.76, 0.62)
+	environment.volumetric_fog_emission = Color(0.0, 0.0, 0.0)
+	environment.volumetric_fog_detail_spread = 9.0
+	environment.volumetric_fog_gi_inject = 0.35
 
 	environment.adjustment_enabled = true
 	environment.adjustment_brightness = 1.0
@@ -131,11 +162,12 @@ func _build_sun() -> void:
 	sun.light_energy = 1.15
 	sun.rotation_degrees = Vector3(-48.0, 34.0, 0.0)
 	sun.shadow_enabled = true
-	## A camera so enxerga ~40m de chao: cascatas curtas dao sombra nitida
-	## e eliminam o chuvisco de shadow acne no deserto plano.
+	## A camera fica a ~59m do alvo e enxerga ~66m de chao, entao o fim da
+	## sombra precisa passar de 125m: abaixo disso a borda da ultima cascata
+	## aparece como uma faixa horizontal atravessando a tela.
 	sun.shadow_bias = 0.025
 	sun.shadow_normal_bias = 0.7
-	sun.directional_shadow_max_distance = 85.0
+	sun.directional_shadow_max_distance = 210.0
 	sun.directional_shadow_split_1 = 0.12
 	sun.directional_shadow_split_2 = 0.3
 	sun.directional_shadow_split_3 = 0.6
@@ -150,6 +182,14 @@ func _build_sun() -> void:
 	bounce.rotation_degrees = Vector3(28.0, -140.0, 0.0)
 	bounce.shadow_enabled = false
 	add_child(bounce)
+
+	var rim := DirectionalLight3D.new()
+	rim.name = "HazeRim"
+	rim.light_color = Color(0.95, 0.74, 0.52)
+	rim.light_energy = 0.08
+	rim.rotation_degrees = Vector3(-6.0, -118.0, 0.0)
+	rim.shadow_enabled = false
+	add_child(rim)
 
 
 ## ---------------------------------------------------------------- terreno
@@ -178,6 +218,105 @@ func _build_terrain(world_data: Dictionary) -> void:
 	)
 
 
+func _build_horizon(world_data: Dictionary) -> void:
+	var container := Node3D.new()
+	container.name = "Horizon"
+	add_child(container)
+
+	var map_size := float(world_data.get("size", 900.0))
+	var ring_radius := map_size * 0.67
+	var mesa_count := 18
+	var seed := int(world_data.get("seed", 20260729))
+	var material := SURFACE_FACTORY.make_rubble_material(Color(0.43, 0.35, 0.26), seed + 901, Vector3(4.4, 2.8, 4.4))
+
+	for index in mesa_count:
+		var angle := TAU * float(index) / float(mesa_count) + _rng.randf_range(-0.08, 0.08)
+		var width := _rng.randf_range(34.0, 92.0)
+		var depth := _rng.randf_range(42.0, 118.0)
+		var height := _rng.randf_range(20.0, 52.0)
+		var center := Vector3(cos(angle) * ring_radius, -2.0, sin(angle) * ring_radius)
+
+		var mesa := Node3D.new()
+		mesa.rotation.y = -angle + PI * 0.5
+		container.add_child(mesa)
+		mesa.position = center
+
+		var base := MeshInstance3D.new()
+		var base_mesh := BoxMesh.new()
+		base_mesh.size = Vector3(width, height, depth)
+		base.mesh = base_mesh
+		base.position = Vector3(0.0, height * 0.5, 0.0)
+		base.material_override = material
+		base.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		mesa.add_child(base)
+
+		var cap := MeshInstance3D.new()
+		var cap_mesh := BoxMesh.new()
+		cap_mesh.size = Vector3(width * _rng.randf_range(0.55, 0.8), height * _rng.randf_range(0.16, 0.26), depth * _rng.randf_range(0.58, 0.84))
+		cap.mesh = cap_mesh
+		cap.position = Vector3(_rng.randf_range(-6.0, 6.0), height + cap_mesh.size.y * 0.42, _rng.randf_range(-8.0, 8.0))
+		cap.material_override = SURFACE_FACTORY.make_concrete_material(Color(0.58, 0.47, 0.34), seed + index * 47, Vector3(3.5, 2.4, 3.5))
+		cap.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		mesa.add_child(cap)
+
+
+func _build_atmospherics(world_data: Dictionary) -> void:
+	var particles := GPUParticles3D.new()
+	particles.name = "DustLayer"
+	particles.amount = 180
+	particles.lifetime = 14.0
+	particles.preprocess = 14.0
+	particles.draw_order = GPUParticles3D.DRAW_ORDER_LIFETIME
+	particles.position = Vector3(0.0, 6.0, 0.0)
+	particles.visibility_aabb = AABB(Vector3(-700.0, -4.0, -700.0), Vector3(1400.0, 30.0, 1400.0))
+
+	var quad := QuadMesh.new()
+	quad.size = Vector2(5.0, 3.4)
+	particles.draw_pass_1 = quad
+
+	var process := ParticleProcessMaterial.new()
+	var half := float(world_data.get("size", 900.0)) * 0.42
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	process.emission_box_extents = Vector3(half, 4.0, half)
+	process.direction = Vector3(1.0, 0.03, 0.2)
+	process.spread = 20.0
+	process.initial_velocity_min = 0.35
+	process.initial_velocity_max = 0.9
+	process.gravity = Vector3(0.0, 0.02, 0.0)
+	process.scale_min = 1.6
+	process.scale_max = 3.8
+	process.angle_min = -180.0
+	process.angle_max = 180.0
+	process.damping_min = 0.0
+	process.damping_max = 0.08
+
+	var ramp := Gradient.new()
+	ramp.offsets = PackedFloat32Array([0.0, 0.45, 1.0])
+	ramp.colors = PackedColorArray([
+		Color(0.88, 0.78, 0.62, 0.0),
+		Color(0.84, 0.72, 0.56, 0.22),
+		Color(0.84, 0.72, 0.56, 0.0),
+	])
+	var ramp_texture := GradientTexture1D.new()
+	ramp_texture.gradient = ramp
+	process.color_ramp = ramp_texture
+	particles.process_material = process
+
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	material.billboard_keep_scale = true
+	material.vertex_color_use_as_albedo = true
+	material.no_depth_test = false
+	## Sem textura o quad de poeira vira um retangulo translucido de borda dura
+	## atravessando a tela. A radial suave e o que transforma em nuvem de pó.
+	material.albedo_texture = Vfx.get_soft_texture()
+	particles.material_override = material
+	add_child(particles)
+	particles.emitting = true
+
+
 ## ---------------------------------------------------------------- zonas
 
 func _build_zones(world_data: Dictionary) -> void:
@@ -203,6 +342,22 @@ func _build_zones(world_data: Dictionary) -> void:
 func _build_village(container: Node3D, zone: Dictionary, center: Vector2) -> void:
 	var radius := float(zone.get("radius", 45.0)) * 0.68
 	var houses := int(zone.get("houses", 8))
+	var seed := int(zone.get("id", "village").hash())
+
+	_add_ground_patch(
+		container,
+		center,
+		Vector2(radius * 1.25, radius * 1.1),
+		SURFACE_FACTORY.make_ground_overlay_material(Color(0.63, 0.56, 0.42), seed + 11, Vector3(4.6, 4.6, 4.6), 0.88),
+		0.05
+	)
+	_add_ground_patch(
+		container,
+		center,
+		Vector2(radius * 0.54, radius * 0.54),
+		SURFACE_FACTORY.make_ground_overlay_material(Color(0.74, 0.67, 0.51), seed + 23, Vector3(3.2, 3.2, 3.2), 0.94),
+		0.07
+	)
 
 	for index in houses:
 		var angle := TAU * float(index) / float(houses) + _rng.randf_range(-0.25, 0.25)
@@ -223,10 +378,29 @@ func _build_village(container: Node3D, zone: Dictionary, center: Vector2) -> voi
 	container.add_child(well)
 	well.global_position = _ground_point(center)
 
+	for offset in [Vector2(-radius * 0.24, radius * 0.08), Vector2(radius * 0.28, -radius * 0.18)]:
+		var canopy := PropFactory.make_cloth_canopy(_rng, 3.4, 2.8, Color(0.68, 0.56, 0.36))
+		container.add_child(canopy)
+		canopy.global_position = _ground_point(center + offset)
+		canopy.rotation.y = _rng.randf_range(0.0, TAU)
+
+		var crates := PropFactory.make_supply_crate_stack(_rng, 2, 1, 2)
+		container.add_child(crates)
+		crates.global_position = _ground_point(center + offset + Vector2(1.8, -1.2))
+
 
 func _build_outpost(container: Node3D, zone: Dictionary, center: Vector2) -> void:
 	var radius := float(zone.get("radius", 45.0)) * 0.8
 	var segments := 8
+	var seed := int(zone.get("id", "outpost").hash())
+
+	_add_ground_patch(
+		container,
+		center,
+		Vector2(radius * 1.12, radius * 1.12),
+		SURFACE_FACTORY.make_ground_overlay_material(Color(0.44, 0.39, 0.31), seed + 31, Vector3(4.0, 4.0, 4.0), 0.9),
+		0.045
+	)
 
 	for index in segments:
 		if index % 3 == 0:
@@ -238,9 +412,33 @@ func _build_outpost(container: Node3D, zone: Dictionary, center: Vector2) -> voi
 		wall.global_position = _ground_point(spot)
 		wall.rotation.y = -angle + PI * 0.5
 
+	for offset in [Vector2(-radius * 0.66, -radius * 0.66), Vector2(radius * 0.66, radius * 0.66)]:
+		var tower := PropFactory.make_watch_tower(_rng)
+		container.add_child(tower)
+		tower.global_position = _ground_point(center + offset)
+		tower.rotation.y = _rng.randf_range(0.0, TAU)
+
+	for offset in [Vector2(-radius * 0.18, 0.0), Vector2(radius * 0.24, -radius * 0.14)]:
+		var crates := PropFactory.make_supply_crate_stack(_rng, 2, 2, 2)
+		container.add_child(crates)
+		crates.global_position = _ground_point(center + offset)
+
+	var barrels := PropFactory.make_barrel_cluster(_rng, 4)
+	container.add_child(barrels)
+	barrels.global_position = _ground_point(center + Vector2(0.0, radius * 0.26))
+
 
 func _build_camp(container: Node3D, zone: Dictionary, center: Vector2) -> void:
 	var radius := float(zone.get("radius", 40.0)) * 0.6
+	var seed := int(zone.get("id", "camp").hash())
+
+	_add_ground_patch(
+		container,
+		center,
+		Vector2(radius * 1.22, radius * 1.08),
+		SURFACE_FACTORY.make_ground_overlay_material(Color(0.52, 0.43, 0.31), seed + 41, Vector3(4.2, 4.2, 4.2), 0.88),
+		0.04
+	)
 
 	for index in int(zone.get("tents", 5)):
 		var angle := TAU * float(index) / 5.0 + _rng.randf_range(-0.3, 0.3)
@@ -249,6 +447,19 @@ func _build_camp(container: Node3D, zone: Dictionary, center: Vector2) -> void:
 		tent.scale = Vector3(0.6, 0.55, 0.6)
 		container.add_child(tent)
 		tent.global_position = _ground_point(spot)
+
+	var canopy := PropFactory.make_cloth_canopy(_rng, 4.2, 3.1, Color(0.58, 0.48, 0.31))
+	container.add_child(canopy)
+	canopy.global_position = _ground_point(center)
+	canopy.rotation.y = _rng.randf_range(0.0, TAU)
+
+	var crates := PropFactory.make_supply_crate_stack(_rng, 2, 2, 1)
+	container.add_child(crates)
+	crates.global_position = _ground_point(center + Vector2(radius * 0.22, -radius * 0.18))
+
+	var barrels := PropFactory.make_barrel_cluster(_rng, 3)
+	container.add_child(barrels)
+	barrels.global_position = _ground_point(center + Vector2(-radius * 0.24, radius * 0.12))
 
 
 func _build_scatter(world_data: Dictionary) -> void:
@@ -287,6 +498,7 @@ func _build_base(world_data: Dictionary) -> void:
 	base.setup(RESOURCE_TUNING)
 	add_child(base)
 	base.global_position = _ground_point(_to_vector2(world_data.get("base", [0.0, 0.0])))
+	_add_base_grounding(world_data)
 
 
 func _build_structures(world_data: Dictionary) -> void:
@@ -370,6 +582,48 @@ func _build_player(world_data: Dictionary) -> void:
 
 func _ground_point(spot: Vector2) -> Vector3:
 	return Vector3(spot.x, height_at(spot.x, spot.y), spot.y)
+
+
+func _add_base_grounding(world_data: Dictionary) -> void:
+	var base_center := _to_vector2(world_data.get("base", [0.0, 0.0]))
+	var seed := int(base_center.x * 97.0 + base_center.y * 131.0)
+
+	var apron := MeshInstance3D.new()
+	apron.name = "BaseApron"
+	var apron_mesh := CylinderMesh.new()
+	apron_mesh.top_radius = 20.0
+	apron_mesh.bottom_radius = 20.0
+	apron_mesh.height = 0.08
+	apron_mesh.radial_segments = 32
+	apron.mesh = apron_mesh
+	apron.position = _ground_point(base_center) + Vector3(0.0, 0.03, 0.0)
+	apron.material_override = SURFACE_FACTORY.make_ground_overlay_material(Color(0.4, 0.39, 0.35), seed + 51, Vector3(4.6, 4.6, 4.6), 0.95)
+	add_child(apron)
+
+	var road := MeshInstance3D.new()
+	road.name = "BaseRoad"
+	var road_mesh := BoxMesh.new()
+	road_mesh.size = Vector3(12.0, 0.06, 28.0)
+	road.mesh = road_mesh
+	road.position = _ground_point(base_center + Vector2(-11.0, -6.0)) + Vector3(0.0, 0.028, 0.0)
+	road.rotation.y = deg_to_rad(18.0)
+	road.material_override = SURFACE_FACTORY.make_ground_overlay_material(Color(0.47, 0.41, 0.31), seed + 63, Vector3(3.2, 3.2, 3.2), 0.92)
+	add_child(road)
+
+
+func _add_ground_patch(container: Node3D, center: Vector2, radius: Vector2, material: Material, y_offset: float = 0.03) -> void:
+	var patch := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 1.0
+	mesh.bottom_radius = 1.0
+	mesh.height = 0.06
+	mesh.radial_segments = 28
+	patch.mesh = mesh
+	patch.scale = Vector3(radius.x, 1.0, radius.y)
+	patch.position = _ground_point(center) + Vector3(0.0, y_offset, 0.0)
+	patch.rotation.y = _rng.randf_range(0.0, TAU)
+	patch.material_override = material
+	container.add_child(patch)
 
 
 func _too_close_to_gameplay(spot: Vector2, margin: float) -> bool:

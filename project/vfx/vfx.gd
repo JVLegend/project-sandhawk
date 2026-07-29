@@ -21,6 +21,12 @@ func _ready() -> void:
 	_debris_mesh.size = Vector3(0.22, 0.22, 0.22)
 
 
+## Textura radial suave, reaproveitada por qualquer sistema que desenhe
+## particula em quad. Sem ela o quad aparece como retangulo de borda dura.
+func get_soft_texture() -> ImageTexture:
+	return _soft_texture
+
+
 ## Rastro luminoso entre dois pontos (hitscan).
 func spawn_tracer(from: Vector3, to: Vector3, color: Color, width: float = 0.05) -> void:
 	var length := from.distance_to(to)

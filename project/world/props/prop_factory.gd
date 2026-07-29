@@ -5,6 +5,7 @@ extends RefCounted
 ## Tudo procedural e autoral, sem asset externo, seguindo a politica do repo.
 
 const NEUTRAL_BUILDING_SCRIPT := preload("res://actors/structures/neutral_building.gd")
+const SURFACE_FACTORY := preload("res://world/props/surface_factory.gd")
 
 
 static func make_rock(scale_factor: float, rng: RandomNumberGenerator) -> Node3D:
@@ -92,6 +93,7 @@ static func make_house(rng: RandomNumberGenerator, neutral: bool = true) -> Node
 	var width := rng.randf_range(5.0, 8.5)
 	var depth := rng.randf_range(5.0, 8.0)
 	var height := rng.randf_range(3.0, 5.2)
+	var surface_seed := int(rng.randi())
 
 	var base_tone := Color(0.8, 0.7, 0.53) if neutral else Color(0.38, 0.38, 0.31)
 	var wall_color := base_tone.lerp(Color(0.7, 0.6, 0.46), rng.randf() * 0.6)
@@ -100,7 +102,7 @@ static func make_house(rng: RandomNumberGenerator, neutral: bool = true) -> Node
 	if neutral:
 		var building = NEUTRAL_BUILDING_SCRIPT.new()
 		building.name = "CivilianHouse"
-		building.setup_house(width, depth, height, wall_color, roof_color)
+		building.setup_house(width, depth, height, wall_color, roof_color, surface_seed)
 		building.rotation.y = rng.randf_range(0.0, TAU)
 		return building
 
@@ -109,9 +111,7 @@ static func make_house(rng: RandomNumberGenerator, neutral: bool = true) -> Node
 	root.collision_layer = CombatLayers.WORLD
 	root.collision_mask = 0
 
-	var wall_material := StandardMaterial3D.new()
-	wall_material.albedo_color = wall_color
-	wall_material.roughness = 0.96
+	var wall_material := SURFACE_FACTORY.make_plaster_material(wall_color, surface_seed + 7, Vector3(2.4, 2.4, 2.4))
 
 	var walls := MeshInstance3D.new()
 	var wall_mesh := BoxMesh.new()
@@ -134,11 +134,31 @@ static func make_house(rng: RandomNumberGenerator, neutral: bool = true) -> Node
 	roof.mesh = roof_mesh
 	roof.position = Vector3(0.0, height + 0.2, 0.0)
 
-	var roof_material := StandardMaterial3D.new()
-	roof_material.albedo_color = roof_color
-	roof_material.roughness = 0.98
+	var roof_material := SURFACE_FACTORY.make_roof_material(roof_color, surface_seed + 17, Vector3(3.2, 3.2, 3.2))
 	roof.material_override = roof_material
 	root.add_child(roof)
+
+	var door := MeshInstance3D.new()
+	var door_mesh := BoxMesh.new()
+	door_mesh.size = Vector3(1.0, 1.85, 0.14)
+	door.mesh = door_mesh
+	door.position = Vector3(0.0, 0.92, depth * 0.5 + 0.08)
+	door.material_override = SURFACE_FACTORY.make_metal_material(Color(0.34, 0.27, 0.18), surface_seed + 31, Vector3(2.0, 2.0, 2.0), 0.12, 0.72)
+	root.add_child(door)
+
+	var window_material := StandardMaterial3D.new()
+	window_material.albedo_color = Color(0.14, 0.17, 0.19)
+	window_material.metallic = 0.16
+	window_material.roughness = 0.24
+
+	for side in [-1.0, 1.0]:
+		var window := MeshInstance3D.new()
+		var window_mesh := BoxMesh.new()
+		window_mesh.size = Vector3(0.58, 0.66, 0.08)
+		window.mesh = window_mesh
+		window.position = Vector3(side * width * 0.24, height * 0.56, depth * 0.5 + 0.05)
+		window.material_override = window_material
+		root.add_child(window)
 
 	root.rotation.y = rng.randf_range(0.0, TAU)
 	return root
@@ -150,9 +170,7 @@ static func make_wall_segment(length: float, height: float) -> Node3D:
 	root.collision_layer = CombatLayers.WORLD
 	root.collision_mask = 0
 
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.38, 0.36, 0.3)
-	material.roughness = 0.97
+	var material := SURFACE_FACTORY.make_concrete_material(Color(0.38, 0.36, 0.3), int(length * 53.0 + height * 97.0), Vector3(2.0, 2.2, 2.0))
 
 	var mesh_instance := MeshInstance3D.new()
 	var mesh := BoxMesh.new()
@@ -161,6 +179,23 @@ static func make_wall_segment(length: float, height: float) -> Node3D:
 	mesh_instance.position = Vector3(0.0, height * 0.5, 0.0)
 	mesh_instance.material_override = material
 	root.add_child(mesh_instance)
+
+	var cap := MeshInstance3D.new()
+	var cap_mesh := BoxMesh.new()
+	cap_mesh.size = Vector3(length + 0.5, 0.22, 1.4)
+	cap.mesh = cap_mesh
+	cap.position = Vector3(0.0, height + 0.12, 0.0)
+	cap.material_override = SURFACE_FACTORY.make_concrete_material(Color(0.52, 0.48, 0.39), int(length * 113.0 + height * 149.0), Vector3(2.2, 2.2, 2.2))
+	root.add_child(cap)
+
+	for side in [-1.0, 1.0]:
+		var buttress := MeshInstance3D.new()
+		var buttress_mesh := BoxMesh.new()
+		buttress_mesh.size = Vector3(1.3, height * 0.86, 1.4)
+		buttress.mesh = buttress_mesh
+		buttress.position = Vector3(side * (length * 0.36), buttress_mesh.size.y * 0.5, 0.0)
+		buttress.material_override = material
+		root.add_child(buttress)
 
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
@@ -204,5 +239,158 @@ static func make_dead_tree(rng: RandomNumberGenerator) -> Node3D:
 		branch.rotation = Vector3(rng.randf_range(0.5, 1.1), rng.randf_range(0.0, TAU), 0.0)
 		branch.material_override = material
 		root.add_child(branch)
+
+	return root
+
+
+static func make_supply_crate_stack(rng: RandomNumberGenerator, columns: int = 2, rows: int = 2, levels: int = 2) -> Node3D:
+	var root := Node3D.new()
+	root.name = "CrateStack"
+
+	var material := SURFACE_FACTORY.make_plaster_material(
+		Color(0.47, 0.39, 0.26).lerp(Color(0.56, 0.46, 0.31), rng.randf() * 0.4),
+		int(rng.randi()),
+		Vector3(2.6, 2.6, 2.6)
+	)
+
+	var spacing := 1.12
+	for level in levels:
+		for row in rows:
+			for column in columns:
+				if level > 0 and rng.randf() < 0.22:
+					continue
+				var crate := MeshInstance3D.new()
+				var mesh := BoxMesh.new()
+				mesh.size = Vector3(0.92, 0.92, 0.92)
+				crate.mesh = mesh
+				crate.position = Vector3(
+					(float(column) - float(columns - 1) * 0.5) * spacing,
+					0.46 + float(level) * 0.96,
+					(float(row) - float(rows - 1) * 0.5) * spacing
+				)
+				crate.rotation.y = rng.randf_range(-0.05, 0.05)
+				crate.material_override = material
+				root.add_child(crate)
+
+	return root
+
+
+static func make_barrel_cluster(rng: RandomNumberGenerator, count: int = 3) -> Node3D:
+	var root := Node3D.new()
+	root.name = "BarrelCluster"
+	var material := SURFACE_FACTORY.make_metal_material(
+		Color(0.43, 0.38, 0.28).lerp(Color(0.54, 0.49, 0.38), rng.randf() * 0.35),
+		int(rng.randi()),
+		Vector3(2.8, 2.8, 2.8),
+		0.28,
+		0.62
+	)
+
+	for index in count:
+		var barrel := MeshInstance3D.new()
+		var mesh := CylinderMesh.new()
+		mesh.top_radius = 0.34
+		mesh.bottom_radius = 0.36
+		mesh.height = 0.96
+		mesh.radial_segments = 10
+		barrel.mesh = mesh
+		barrel.position = Vector3(
+			rng.randf_range(-0.9, 0.9),
+			0.48,
+			rng.randf_range(-0.9, 0.9)
+		)
+		barrel.rotation.y = rng.randf_range(0.0, TAU)
+		barrel.material_override = material
+		root.add_child(barrel)
+
+	return root
+
+
+static func make_watch_tower(rng: RandomNumberGenerator) -> Node3D:
+	var root := Node3D.new()
+	root.name = "WatchTower"
+
+	var wood := SURFACE_FACTORY.make_plaster_material(Color(0.47, 0.39, 0.28), int(rng.randi()), Vector3(2.2, 2.2, 2.2))
+	var metal := SURFACE_FACTORY.make_metal_material(Color(0.35, 0.35, 0.33), int(rng.randi()), Vector3(2.6, 2.6, 2.6), 0.22, 0.68)
+	var height := rng.randf_range(4.8, 6.8)
+
+	for offset in [
+		Vector3(-1.0, height * 0.5, -1.0),
+		Vector3(1.0, height * 0.5, -1.0),
+		Vector3(-1.0, height * 0.5, 1.0),
+		Vector3(1.0, height * 0.5, 1.0),
+	]:
+		var leg := MeshInstance3D.new()
+		var leg_mesh := BoxMesh.new()
+		leg_mesh.size = Vector3(0.22, height, 0.22)
+		leg.mesh = leg_mesh
+		leg.position = offset
+		leg.material_override = wood
+		root.add_child(leg)
+
+	var deck := MeshInstance3D.new()
+	var deck_mesh := BoxMesh.new()
+	deck_mesh.size = Vector3(3.0, 0.22, 3.0)
+	deck.mesh = deck_mesh
+	deck.position = Vector3(0.0, height + 0.12, 0.0)
+	deck.material_override = wood
+	root.add_child(deck)
+
+	for side in [-1.0, 1.0]:
+		var rail := MeshInstance3D.new()
+		var rail_mesh := BoxMesh.new()
+		rail_mesh.size = Vector3(3.0, 0.12, 0.12)
+		rail.mesh = rail_mesh
+		rail.position = Vector3(0.0, height + 0.76, side * 1.42)
+		rail.material_override = wood
+		root.add_child(rail)
+
+		var rail_side := MeshInstance3D.new()
+		var rail_side_mesh := BoxMesh.new()
+		rail_side_mesh.size = Vector3(0.12, 0.12, 3.0)
+		rail_side.mesh = rail_side_mesh
+		rail_side.position = Vector3(side * 1.42, height + 0.76, 0.0)
+		rail_side.material_override = wood
+		root.add_child(rail_side)
+
+	var ladder := MeshInstance3D.new()
+	var ladder_mesh := BoxMesh.new()
+	ladder_mesh.size = Vector3(0.14, height * 0.82, 0.14)
+	ladder.mesh = ladder_mesh
+	ladder.position = Vector3(1.18, height * 0.42, 0.0)
+	ladder.material_override = metal
+	root.add_child(ladder)
+
+	return root
+
+
+static func make_cloth_canopy(rng: RandomNumberGenerator, width: float = 3.2, depth: float = 2.6, cloth_color: Color = Color(0.64, 0.52, 0.34)) -> Node3D:
+	var root := Node3D.new()
+	root.name = "ClothCanopy"
+
+	var pole_material := SURFACE_FACTORY.make_metal_material(Color(0.38, 0.36, 0.32), int(rng.randi()), Vector3(2.0, 2.0, 2.0), 0.14, 0.72)
+	var cloth_material := SURFACE_FACTORY.make_roof_material(cloth_color, int(rng.randi()), Vector3(2.4, 2.4, 2.4))
+
+	for x_sign in [-1.0, 1.0]:
+		for z_sign in [-1.0, 1.0]:
+			var pole := MeshInstance3D.new()
+			var pole_mesh := CylinderMesh.new()
+			pole_mesh.top_radius = 0.08
+			pole_mesh.bottom_radius = 0.1
+			pole_mesh.height = 2.6
+			pole_mesh.radial_segments = 6
+			pole.mesh = pole_mesh
+			pole.position = Vector3(x_sign * width * 0.45, 1.3, z_sign * depth * 0.45)
+			pole.material_override = pole_material
+			root.add_child(pole)
+
+	var cloth := MeshInstance3D.new()
+	var cloth_mesh := BoxMesh.new()
+	cloth_mesh.size = Vector3(width, 0.12, depth)
+	cloth.mesh = cloth_mesh
+	cloth.position = Vector3(0.0, 2.56, 0.0)
+	cloth.rotation_degrees = Vector3(rng.randf_range(-3.0, 3.0), 0.0, rng.randf_range(-3.0, 3.0))
+	cloth.material_override = cloth_material
+	root.add_child(cloth)
 
 	return root

@@ -7,6 +7,8 @@ extends StaticBody3D
 
 signal destroyed(structure_id: String)
 
+const SURFACE_FACTORY := preload("res://world/props/surface_factory.gd")
+
 enum Kind {
 	RADAR,
 	HQ,
@@ -121,10 +123,8 @@ func _build() -> void:
 
 
 func _build_radar() -> void:
-	var metal := StandardMaterial3D.new()
-	metal.albedo_color = Color(0.33, 0.35, 0.32)
-	metal.metallic = 0.4
-	metal.roughness = 0.6
+	var seed := structure_id.hash()
+	var metal := SURFACE_FACTORY.make_metal_material(Color(0.33, 0.35, 0.32), seed + 11, Vector3(2.8, 2.8, 2.8), 0.42, 0.58)
 
 	var base := MeshInstance3D.new()
 	var base_mesh := BoxMesh.new()
@@ -160,19 +160,15 @@ func _build_radar() -> void:
 	dish.rotation_degrees = Vector3(58.0, 0.0, 0.0)
 	dish.position = Vector3(0.0, 0.4, 0.0)
 
-	var dish_material := StandardMaterial3D.new()
-	dish_material.albedo_color = Color(0.55, 0.56, 0.53)
-	dish_material.metallic = 0.25
-	dish_material.roughness = 0.5
+	var dish_material := SURFACE_FACTORY.make_metal_material(Color(0.55, 0.56, 0.53), seed + 37, Vector3(3.0, 3.0, 3.0), 0.28, 0.52)
 	dish_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	dish.material_override = dish_material
 	_spin_target.add_child(dish)
 
 
 func _build_hq() -> void:
-	var concrete := StandardMaterial3D.new()
-	concrete.albedo_color = Color(0.34, 0.35, 0.31)
-	concrete.roughness = 0.95
+	var seed := structure_id.hash()
+	var concrete := SURFACE_FACTORY.make_concrete_material(Color(0.34, 0.35, 0.31), seed + 59, Vector3(3.4, 2.6, 3.4))
 
 	var main := MeshInstance3D.new()
 	var main_mesh := BoxMesh.new()
@@ -199,18 +195,14 @@ func _build_hq() -> void:
 	antenna.mesh = antenna_mesh
 	antenna.position = Vector3(4.5, 14.2, -2.5)
 
-	var antenna_material := StandardMaterial3D.new()
-	antenna_material.albedo_color = Color(0.3, 0.3, 0.28)
-	antenna_material.metallic = 0.5
+	var antenna_material := SURFACE_FACTORY.make_metal_material(Color(0.3, 0.3, 0.28), seed + 73, Vector3(4.0, 4.0, 4.0), 0.5, 0.48)
 	antenna.material_override = antenna_material
 	_visual.add_child(antenna)
 
 
 func _build_depot() -> void:
-	var metal := StandardMaterial3D.new()
-	metal.albedo_color = Color(0.4, 0.36, 0.27)
-	metal.metallic = 0.3
-	metal.roughness = 0.6
+	var seed := structure_id.hash()
+	var metal := SURFACE_FACTORY.make_metal_material(Color(0.4, 0.36, 0.27), seed + 97, Vector3(2.4, 2.4, 2.4), 0.32, 0.62)
 
 	for offset in [Vector3(-1.8, 0.0, -1.8), Vector3(1.8, 0.0, -1.8), Vector3(0.0, 0.0, 1.8)]:
 		var tank := MeshInstance3D.new()
@@ -257,8 +249,6 @@ func _replace_with_rubble(size: Vector3) -> void:
 	rubble.position = Vector3(0.0, mesh.size.y * 0.5, 0.0)
 	rubble.rotation.y = randf_range(-0.2, 0.2)
 
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.18, 0.16, 0.14)
-	material.roughness = 1.0
+	var material := SURFACE_FACTORY.make_rubble_material(Color(0.18, 0.16, 0.14), structure_id.hash() + 131, Vector3(2.1, 2.1, 2.1))
 	rubble.material_override = material
 	add_child(rubble)
