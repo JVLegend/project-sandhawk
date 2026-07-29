@@ -16,6 +16,9 @@ const EXPECTED_TURRETS := 4
 const EXPECTED_SAMS := 2
 const EXPECTED_STRUCTURES := 4
 const EXPECTED_POWS := 4
+const EXPECTED_TECHNICALS := 4
+const EXPECTED_TANKS := 3
+const EXPECTED_ATTACK_HELIS := 2
 
 var _failures: Array[String] = []
 var _damage_event_script: GDScript
@@ -110,21 +113,31 @@ func _test_campaign_state() -> void:
 
 
 func _test_spawns() -> void:
-	var soldiers := 0
-	var turrets := 0
-	var sams := 0
-
+	var counts := {}
 	for enemy in get_nodes_in_group("enemy"):
 		var definition = enemy.get("definition")
 		if definition == null:
 			continue
-		match definition.id:
-			"soldier_ak":
-				soldiers += 1
-			"aaa_gun":
-				turrets += 1
-			"sam_launcher":
-				sams += 1
+		counts[definition.id] = int(counts.get(definition.id, 0)) + 1
+
+	var soldiers: int = counts.get("soldier_ak", 0)
+	var turrets: int = counts.get("aaa_gun", 0)
+	var sams: int = counts.get("sam_launcher", 0)
+
+	_expect(counts.get("technical", 0) == EXPECTED_TECHNICALS,
+		"Esperado %d picapes, achou %d" % [EXPECTED_TECHNICALS, counts.get("technical", 0)])
+	_expect(counts.get("tank", 0) == EXPECTED_TANKS,
+		"Esperado %d tanques, achou %d" % [EXPECTED_TANKS, counts.get("tank", 0)])
+	_expect(counts.get("enemy_helicopter", 0) == EXPECTED_ATTACK_HELIS,
+		"Esperado %d helicopteros inimigos, achou %d" % [EXPECTED_ATTACK_HELIS, counts.get("enemy_helicopter", 0)])
+
+	## O aereo tem de nascer no ar, senao ele vira um tanque estranho no chao.
+	for enemy in get_nodes_in_group("enemy"):
+		var definition = enemy.get("definition")
+		if definition != null and definition.id == "enemy_helicopter":
+			_expect(enemy.global_position.y > 8.0,
+				"Helicoptero inimigo deveria nascer no ar, nasceu em y=%.1f" % enemy.global_position.y)
+			break
 
 	_expect(soldiers == EXPECTED_SOLDIERS, "Esperado %d soldados, achou %d" % [EXPECTED_SOLDIERS, soldiers])
 	_expect(turrets == EXPECTED_TURRETS, "Esperado %d canhoes AAA, achou %d" % [EXPECTED_TURRETS, turrets])

@@ -33,6 +33,9 @@ extends Resource
 @export var projectile_splash_radius: float = 0.0
 @export var projectile_splash_damage: int = 0
 
+## Acima de zero o inimigo nasce no ar, nessa altura. Usado pelos aereos.
+@export var spawn_altitude: float = 0.0
+
 @export_group("Visual")
 @export var body_color: Color = Color("b4443c")
 @export var body_size: Vector3 = Vector3(1.0, 1.8, 1.0)

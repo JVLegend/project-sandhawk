@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/enemies/enemy_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "tank"
+display_name = "Tanque"
+max_hp = 65
+score_value = 320
+move_speed = 4.2
+flee_speed = 0.0
+flee_at_hp = 0
+detection_range = 70.0
+attack_range = 52.0
+attack_damage = 38
+attack_cooldown = 3.8
+burst_count = 1
+burst_interval = 0.2
+projectile_speed = 46.0
+lock_on_time = 0.0
+requires_line_of_sight = true
+projectile_homing_turn_rate = 0.0
+projectile_splash_radius = 5.0
+projectile_splash_damage = 16
+spawn_altitude = 0.0
+body_color = Color(0.309804, 0.329412, 0.270588, 1)
+body_size = Vector3(3.6, 2.2, 6.0)
+explosion_scale = 1.8

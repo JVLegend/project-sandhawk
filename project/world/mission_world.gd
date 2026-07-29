@@ -19,12 +19,18 @@ const ENEMY_SCENES := {
 	"soldier_ak": preload("res://actors/enemies/soldier_enemy.tscn"),
 	"aaa_gun": preload("res://actors/enemies/aaa_turret.tscn"),
 	"sam_launcher": preload("res://actors/enemies/sam_launcher.tscn"),
+	"technical": preload("res://actors/enemies/technical_enemy.tscn"),
+	"tank": preload("res://actors/enemies/tank_enemy.tscn"),
+	"enemy_helicopter": preload("res://actors/enemies/enemy_helicopter.tscn"),
 }
 
 const ENEMY_DEFINITIONS := {
 	"soldier_ak": preload("res://data/enemies/soldier_ak.tres"),
 	"aaa_gun": preload("res://data/enemies/aaa_gun.tres"),
 	"sam_launcher": preload("res://data/enemies/sam_launcher.tres"),
+	"technical": preload("res://data/enemies/technical.tres"),
+	"tank": preload("res://data/enemies/tank.tres"),
+	"enemy_helicopter": preload("res://data/enemies/enemy_helicopter.tres"),
 }
 
 var terrain: DesertTerrain
@@ -530,7 +536,11 @@ func _build_enemies(world_data: Dictionary) -> void:
 
 		var spot := _to_vector2(entry.get("position", [0.0, 0.0]))
 		var ground := _ground_point(spot)
-		enemy.global_position = ground + Vector3(0.0, definition.body_size.y * 0.5 + 0.05, 0.0)
+		## Aereos nascem na altitude de cruzeiro; terrestres apoiam no chao.
+		var lift := definition.spawn_altitude
+		if lift <= 0.0:
+			lift = definition.body_size.y * 0.5 + 0.05
+		enemy.global_position = ground + Vector3(0.0, lift, 0.0)
 		enemy.setup(definition)
 
 

@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/enemies/enemy_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "technical"
+display_name = "Picape armada"
+max_hp = 14
+score_value = 90
+move_speed = 11.0
+flee_speed = 0.0
+flee_at_hp = 0
+detection_range = 62.0
+attack_range = 34.0
+attack_damage = 5
+attack_cooldown = 1.6
+burst_count = 5
+burst_interval = 0.1
+projectile_speed = 0.0
+lock_on_time = 0.0
+requires_line_of_sight = true
+projectile_homing_turn_rate = 0.0
+projectile_splash_radius = 0.0
+projectile_splash_damage = 0
+spawn_altitude = 0.0
+body_color = Color(0.482353, 0.454902, 0.352941, 1)
+body_size = Vector3(2.2, 1.6, 4.6)
+explosion_scale = 1.1
