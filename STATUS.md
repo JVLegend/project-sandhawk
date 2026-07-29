@@ -3,12 +3,18 @@
 Tags: #GameDev #Execucao #Roadmap #Godot
 
 - Data: 2026-07-29
-- Fases concluidas: `0` a `8` do `docs/PLANO_EXECUCAO_2026.md`
-- Estado: vertical slice jogavel de ponta a ponta, com briefing, missao completa e debriefing
-- Ultimo marco: passe visual (terreno procedural com shader de areia, iluminacao ACES, helicoptero modelado, VFX em camadas) e passe de audio (16 sons sintetizados em codigo, trilha dinamica em 2 camadas)
-- Proximo passo: playtest de verdade. Ajustar tuning nos `.tres` (voo, armas, inimigos, recursos) a partir do que incomodar em uma sessao completa
-- Risco principal aberto: balanceamento. Os numeros vieram da spec, nao de playtest: fuel, dano do AAA/SAM e tempo de par da missao precisam de ajuste com pessoas reais jogando
-- Observacao: `Godot.app` e os `export_templates` 4.7.1 estao no HD externo em `/Volumes/Karine HD Externo`; o `godot` do PATH (Homebrew) tambem e 4.7.1
+- Estado: vertical slice jogavel de ponta a ponta com menu de titulo, campanha
+  de 2 missoes com save, 6 tipos de inimigo com modelos proprios, trilha
+  musical de 16 bits e passe visual completo (texturas CC0, vegetacao em
+  MultiMesh, decoracao de zonas, explosoes em 8 camadas)
+- Ultimo marco: vegetacao por ruido de aglomeracao (2.600 tufos + 420 arbustos
+  em 2 draw calls), overlay de chao das zonas trocado de concreto para terra
+  sem juntas (matava a "grade waffle"), menu de titulo com selecao de missao
+- Proximo passo: playtest de balanceamento; depois, menu de pausa (ESC) e
+  feedback de dano no HUD (flash direcional)
+- Performance: ~4,9 ms/frame no M4 com tudo ligado (SSIL desligado por
+  medicao: 16% do frame para 0,25% dos pixels). Ver tools/perf_probe.tscn
+- Observacao: Godot 4.7.1 via Homebrew no PATH; export templates no HD externo
 
 ## Como rodar
 

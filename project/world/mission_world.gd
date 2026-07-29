@@ -52,6 +52,7 @@ func build(world_data: Dictionary) -> void:
 	_build_atmospherics(world_data)
 	_build_zones(world_data)
 	_build_scatter(world_data)
+	_build_vegetation(world_data)
 	_build_base(world_data)
 	_build_structures(world_data)
 	_build_enemies(world_data)
@@ -368,7 +369,7 @@ func _build_village(container: Node3D, zone: Dictionary, center: Vector2) -> voi
 		container,
 		center,
 		radius * 1.4,
-		SURFACE_FACTORY.make_track_overlay_material(Color(0.56, 0.49, 0.37), seed + 27, Vector3(4.8, 4.8, 4.8), 0.72),
+		SURFACE_FACTORY.make_track_overlay_material(Color(0.56, 0.49, 0.37), seed + 27, Vector3(4.8, 4.8, 4.8), 0.42),
 		0.052
 	)
 
@@ -422,7 +423,7 @@ func _build_outpost(container: Node3D, zone: Dictionary, center: Vector2) -> voi
 		container,
 		center,
 		radius * 1.3,
-		SURFACE_FACTORY.make_track_overlay_material(Color(0.32, 0.29, 0.25), seed + 35, Vector3(4.2, 4.2, 4.2), 0.78),
+		SURFACE_FACTORY.make_track_overlay_material(Color(0.32, 0.29, 0.25), seed + 35, Vector3(4.2, 4.2, 4.2), 0.44),
 		0.05
 	)
 	_add_burn_mark(
@@ -495,7 +496,7 @@ func _build_camp(container: Node3D, zone: Dictionary, center: Vector2) -> void:
 		container,
 		center,
 		radius * 1.18,
-		SURFACE_FACTORY.make_track_overlay_material(Color(0.42, 0.36, 0.2), seed + 43, Vector3(4.2, 4.2, 4.2), 0.66),
+		SURFACE_FACTORY.make_track_overlay_material(Color(0.42, 0.36, 0.2), seed + 43, Vector3(4.2, 4.2, 4.2), 0.4),
 		0.048
 	)
 
@@ -556,6 +557,31 @@ func _build_scatter(world_data: Dictionary) -> void:
 		var tree := PropFactory.make_dead_tree(_rng)
 		container.add_child(tree)
 		tree.global_position = _ground_point(spot)
+
+
+func _build_vegetation(world_data: Dictionary) -> void:
+	## Zonas entram com metade do raio: capim na borda da vila fica natural,
+	## mas o miolo jogavel (pads, estruturas, tendas) permanece limpo.
+	var keep_out: Array = []
+	keep_out.append({"position": _to_vector2(world_data.get("base", [0.0, 0.0])), "radius": 30.0})
+	for zone in _zones:
+		keep_out.append({
+			"position": _to_vector2(zone.get("position", [0.0, 0.0])),
+			"radius": float(zone.get("radius", 40.0)) * 0.5,
+		})
+
+	var scatter: Dictionary = world_data.get("scatter", {})
+	var vegetation := Vegetation.new()
+	vegetation.name = "Vegetation"
+	add_child(vegetation)
+	vegetation.generate(
+		float(world_data.get("size", 900.0)),
+		int(world_data.get("seed", 20260729)),
+		int(scatter.get("grass", 2600)),
+		int(scatter.get("bushes", 420)),
+		height_at,
+		keep_out
+	)
 
 
 ## ---------------------------------------------------------------- atores
@@ -689,7 +715,7 @@ func _add_base_grounding(world_data: Dictionary) -> void:
 	road_tracks.mesh = road_tracks_mesh
 	road_tracks.position = road.position + Vector3(0.0, 0.022, 0.0)
 	road_tracks.rotation = road.rotation
-	road_tracks.material_override = SURFACE_FACTORY.make_track_overlay_material(Color(0.28, 0.25, 0.22), seed + 69, Vector3(3.4, 3.4, 3.4), 0.84)
+	road_tracks.material_override = SURFACE_FACTORY.make_track_overlay_material(Color(0.28, 0.25, 0.22), seed + 69, Vector3(3.4, 3.4, 3.4), 0.5)
 	add_child(road_tracks)
 
 	var landing_wear := MeshInstance3D.new()

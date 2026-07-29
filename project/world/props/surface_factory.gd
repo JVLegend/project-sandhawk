@@ -71,7 +71,10 @@ static func make_ground_overlay_material(
 ) -> StandardMaterial3D:
 	var accent := base_color.lightened(0.05)
 	var dust := base_color.darkened(0.12)
-	var texture := _make_concrete_texture(base_color, accent, dust, seed)
+	## Terra batida, NAO concreto: a textura de concreto tem juntas escuras a
+	## cada 18 px que, repetidas sobre um disco de zona inteiro, viram uma grade
+	## tipo waffle atravessando o chao.
+	var texture := _make_dirt_texture(base_color, accent, dust, seed)
 
 	var material := _make_material(texture, 0.98, 0.0, uv_scale)
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
@@ -176,6 +179,23 @@ static func _make_concrete_texture(base: Color, accent: Color, grime: Color, see
 			var color := base.lerp(accent, 0.16 + fine * 0.14 + coarse * 0.12)
 			color = color.lerp(grime, patch * 0.18 + drip)
 			color = color.darkened(seam)
+			image.set_pixel(x, y, color)
+
+	return ImageTexture.create_from_image(image)
+
+
+## Terra batida sem juntas: so manchas organicas em tres escalas.
+static func _make_dirt_texture(base: Color, accent: Color, grime: Color, seed: int) -> Texture2D:
+	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+
+	for y in TEXTURE_SIZE:
+		for x in TEXTURE_SIZE:
+			var fine := _hash_2d(x, y, seed)
+			var coarse := _hash_2d(x / 7, y / 7, seed + 29)
+			var patch := _hash_2d(x / 19, y / 15, seed + 67)
+
+			var color := base.lerp(accent, 0.14 + fine * 0.12 + coarse * 0.16)
+			color = color.lerp(grime, patch * 0.22)
 			image.set_pixel(x, y, color)
 
 	return ImageTexture.create_from_image(image)
