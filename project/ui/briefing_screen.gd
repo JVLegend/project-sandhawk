@@ -28,7 +28,7 @@ class TacticalMap extends Control:
 	}
 
 	func _draw() -> void:
-		var font := ThemeDB.fallback_font
+		var font := UiTheme.FONT_REGULAR
 		var rect := Rect2(Vector2.ZERO, size)
 
 		draw_rect(rect, Color(0.07, 0.09, 0.09, 0.9))
@@ -101,6 +101,7 @@ func _build() -> void:
 	var background := ColorRect.new()
 	background.color = COLOR_BG
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	UiTheme.apply(background)
 	add_child(background)
 
 	var margin := MarginContainer.new()
@@ -121,7 +122,9 @@ func _build() -> void:
 	columns.add_child(left)
 
 	left.add_child(_make_label("OPERACAO", 12, COLOR_DIM))
-	left.add_child(_make_label(MissionManager.get_title().to_upper(), 26, COLOR_AMBER))
+	var title := _make_label(MissionManager.get_title().to_upper(), 26, COLOR_AMBER)
+	UiTheme.apply_bold(title)
+	left.add_child(title)
 	left.add_child(_make_separator())
 
 	for line in MissionManager.get_briefing_lines():

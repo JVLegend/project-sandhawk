@@ -25,6 +25,7 @@ func _ready() -> void:
 	Engine.max_fps = 0
 	Engine.time_scale = 1.0
 
+	UiTheme.install(get_tree())
 	_ensure_runtime_input_map()
 
 	if not GameState.has_campaign():

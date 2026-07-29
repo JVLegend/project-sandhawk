@@ -9,6 +9,9 @@ extends Node3D
 ## terrestres vivem em zonas achatadas, entao nao ha descompasso perceptivel.
 
 const SAND_SHADER := preload("res://world/terrain/desert_sand.gdshader")
+const SAND_COLOR_TEXTURE := preload("res://assets/textures/sand_color.jpg")
+const SAND_NORMAL_TEXTURE := preload("res://assets/textures/sand_normal.jpg")
+const SAND_ROUGHNESS_TEXTURE := preload("res://assets/textures/sand_roughness.jpg")
 
 const SAND_LOW := Color(0.55, 0.44, 0.29)
 const SAND_HIGH := Color(0.74, 0.63, 0.43)
@@ -131,6 +134,9 @@ func _build_mesh() -> void:
 
 	var material := ShaderMaterial.new()
 	material.shader = SAND_SHADER
+	material.set_shader_parameter("sand_color", SAND_COLOR_TEXTURE)
+	material.set_shader_parameter("sand_normal", SAND_NORMAL_TEXTURE)
+	material.set_shader_parameter("sand_roughness", SAND_ROUGHNESS_TEXTURE)
 
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.name = "TerrainMesh"

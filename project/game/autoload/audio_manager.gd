@@ -45,6 +45,32 @@ func _ready() -> void:
 	_build_ui_player()
 
 
+## Os loops de rotor, turbina, guincho e trilha tocam ate o fim do processo.
+## Sem soltar as referencias no desligamento, cada um aparece como instancia
+## vazada no encerramento (AudioStreamWAV + AudioStreamPlaybackWAV).
+func _exit_tree() -> void:
+	release_all()
+
+
+## Publico porque o smoke test roda em modo --script e encerra com quit(),
+## que atropela a ordem normal de desligamento dos autoloads.
+func release_all() -> void:
+	var persistent := [_rotor_player, _turbine_player, _winch_player, _music_calm, _music_combat, _ui_player]
+
+	for entry in _active_players:
+		var player = entry["player"]
+		if is_instance_valid(player):
+			persistent.append(player)
+	_active_players.clear()
+
+	for player in persistent:
+		if is_instance_valid(player):
+			player.stop()
+			player.stream = null
+
+	_streams.clear()
+
+
 ## Liga os loops presos ao helicoptero. Chamado quando o jogador nasce.
 func attach_to_player(player: Node3D) -> void:
 	_carrier = player

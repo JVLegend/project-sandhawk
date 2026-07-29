@@ -6,7 +6,9 @@ extends CanvasLayer
 ## estao a bordo, alem de para onde ir.
 
 const WEAPON_KEYS := ["ESPACO", "F", "R"]
-const EDGE_MARGIN := 64.0
+## Margem grande de proposito: mantem a seta de rota longe dos paineis
+## ancorados nos cantos, que senao brigam por espaco na tela.
+const EDGE_MARGIN := 118.0
 
 const COLOR_TEXT := Color(0.88, 0.91, 0.94)
 const COLOR_DIM := Color(0.58, 0.62, 0.66)
@@ -288,6 +290,7 @@ func _build_ui() -> void:
 	_root.name = "HudRoot"
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiTheme.apply(_root)
 	add_child(_root)
 
 	_build_resource_panel()

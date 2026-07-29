@@ -38,8 +38,24 @@ Decisoes congeladas para destravar a implementacao inicial.
 
 ### 6. Politica de assets
 
-- `100% originais/autoria propria no repositório`
+Revisada em 29/07/2026. A regra anterior era `100% originais/autoria propria no
+repositório`. Ela foi flexibilizada para permitir material de licenca livre,
+mantendo intacto o objetivo original, que e nao carregar risco de copyright.
+
 - Zero codigo, arte, audio, mapas ou dados proprietarios da EA versionados no repo
+- Assets de terceiros sao permitidos **apenas** sob CC0 ou licenca livre
+  equivalente (OFL para fontes). Nada de CC-BY-NC, "free for personal use" ou
+  licenca ambigua
+- Todo asset de terceiro entra registrado em `project/assets/CREDITS.md`, com
+  origem, licenca e se exige atribuicao
+- Modelos 3D, audio, VFX e shaders continuam autorais e gerados em codigo. O
+  material externo entra so como textura e tipografia, que sao caros de produzir
+  e baratos de licenciar limpo
+
+Racional da mudanca: a politica antiga protegia contra o risco certo (EA), mas
+tambem barrava dominio publico, que nao oferece risco nenhum. Texturas PBR e uma
+fonte condensada dao um salto de qualidade visual que nao se consegue apenas com
+geracao procedural, e CC0/OFL sao redistribuiveis inclusive em produto comercial.
 
 ### 7. Recorte do vertical slice
 

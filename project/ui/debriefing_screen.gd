@@ -58,6 +58,7 @@ func _build(stats: Dictionary, success: bool, failure_reason: String, next_title
 	var background := ColorRect.new()
 	background.color = COLOR_BG
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	UiTheme.apply(background)
 	add_child(background)
 
 	var center := CenterContainer.new()
