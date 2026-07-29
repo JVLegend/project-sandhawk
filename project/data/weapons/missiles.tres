@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/weapons/weapon_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "missiles"
+display_name = "Misseis"
+mode = 2
+max_ammo = 7
+fire_rate = 0.6666
+damage = 40
+range_meters = 90.0
+splash_radius = 5.5
+splash_damage = 18
+spread_degrees = 0.0
+projectile_speed = 42.0
+homing_turn_rate = 120.0
+trauma = 0.16
+tracer_color = Color(0.784314, 0.886275, 1, 1)
+muzzle_offset = Vector3(0, -0.25, -2.6)

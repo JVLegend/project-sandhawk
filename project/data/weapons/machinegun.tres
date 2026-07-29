@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/weapons/weapon_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "machinegun"
+display_name = "Metralhadora"
+mode = 0
+max_ammo = 1178
+fire_rate = 10.0
+damage = 1
+range_meters = 35.0
+splash_radius = 0.0
+splash_damage = 0
+spread_degrees = 3.0
+projectile_speed = 0.0
+homing_turn_rate = 0.0
+trauma = 0.018
+tracer_color = Color(1, 0.858824, 0.443137, 1)
+muzzle_offset = Vector3(0, -0.1, -2.8)

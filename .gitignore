@@ -1,6 +1,6 @@
 .DS_Store
-.godot/
-.import/
-export_presets.cfg
+**/.godot/
+**/.import/
+project/builds/
 *.tmp
 *.log
