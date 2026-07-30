@@ -374,13 +374,15 @@ func _ensure_runtime_input_map() -> void:
 		_make_key_event(KEY_RIGHT),
 		_make_joy_axis_event(JOY_AXIS_LEFT_X, 1.0)
 	])
+	## Sentido invertido a pedido do playtest: Q gira para o lado que Q "parece"
+	## girar. O stick acompanha para teclado e controle concordarem.
 	_register_action("turn_left", [
-		_make_key_event(KEY_Q),
-		_make_joy_axis_event(JOY_AXIS_RIGHT_X, -1.0)
-	])
-	_register_action("turn_right", [
 		_make_key_event(KEY_E),
 		_make_joy_axis_event(JOY_AXIS_RIGHT_X, 1.0)
+	])
+	_register_action("turn_right", [
+		_make_key_event(KEY_Q),
+		_make_joy_axis_event(JOY_AXIS_RIGHT_X, -1.0)
 	])
 	_register_action("fire_primary", [
 		_make_key_event(KEY_SPACE),
