@@ -44,7 +44,7 @@ O projeto segue três princípios inegociáveis:
 
 ## ⬇️ Baixar e jogar (sem instalar nada)
 
-Baixe a versão pronta na [página de **Releases**](https://github.com/JVLegend/desert-strike-rebuild/releases):
+Baixe a versão pronta na [página de **Releases**](https://github.com/JVLegend/project-sandhawk/releases):
 não precisa de Godot, nem de git, nem de conhecimento técnico.
 
 ### 🪟 Windows
@@ -81,7 +81,7 @@ não precisa de Godot, nem de git, nem de conhecimento técnico.
 **Requisito:** [Godot 4.7+](https://godotengine.org/download) (no macOS: `brew install godot`).
 
 ```bash
-git clone https://github.com/JVLegend/desert-strike-rebuild.git
+git clone https://github.com/JVLegend/project-sandhawk.git
 cd desert-strike-rebuild/project
 godot --headless --import   # primeira vez: gera o cache de importacao
 godot                        # roda o jogo
