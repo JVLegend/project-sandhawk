@@ -9,7 +9,24 @@ const SURFACE_FACTORY := preload("res://world/props/surface_factory.gd")
 
 
 static func make_rock(scale_factor: float, rng: RandomNumberGenerator) -> Node3D:
-	var root := Node3D.new()
+	## Pedra grande e obstaculo de verdade: veiculos deslizam ao redor dela
+	## (move_and_slide) e ela bloqueia tiro e linha de visada, virando cobertura.
+	## Pedrinhas continuam atravessaveis, senao tudo engancha em cascalho.
+	var root: Node3D
+	if scale_factor >= 1.3:
+		var body := StaticBody3D.new()
+		body.collision_layer = CombatLayers.WORLD
+		body.collision_mask = 0
+
+		var shape := CollisionShape3D.new()
+		var sphere := SphereShape3D.new()
+		sphere.radius = scale_factor * 0.85
+		shape.shape = sphere
+		shape.position = Vector3(0.0, scale_factor * 0.35, 0.0)
+		body.add_child(shape)
+		root = body
+	else:
+		root = Node3D.new()
 	root.name = "Rock"
 
 	var material := StandardMaterial3D.new()

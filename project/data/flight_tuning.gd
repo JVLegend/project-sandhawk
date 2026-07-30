@@ -15,7 +15,7 @@ extends Resource
 @export var bank_lerp: float = 8.0
 @export var rotor_speed_degrees: float = 1500.0
 @export var rotor_blur_threshold: float = 0.18
-@export var rotor_blur_max_alpha: float = 0.72
+@export var rotor_blur_max_alpha: float = 0.3
 @export var shadow_size: float = 7.0
 
 @export_group("Camera")

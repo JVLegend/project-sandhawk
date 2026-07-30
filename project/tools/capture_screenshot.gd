@@ -56,6 +56,14 @@ func _ready() -> void:
 		get_tree().call_group("camera_rig", "snap_to_target")
 		await _wait_frames(CAMERA_CATCHUP_FRAMES)
 
+	if mode == "voo":
+		## Acelera de verdade por ~1,5 s para o borrao do rotor aparecer.
+		Input.action_press("move_forward")
+		await _wait_frames(90)
+		await _capture_keep_input(output_path)
+		Input.action_release("move_forward")
+		return
+
 	if mode == "explosao" and target != null and target.has_method("take_damage"):
 		target.take_damage(DAMAGE_EVENT.create(
 			9999,
@@ -68,6 +76,21 @@ func _ready() -> void:
 		await _wait_frames(EXPLOSION_FRAMES)
 
 	await _capture(output_path)
+
+
+## Captura sem soltar o input antes do frame ser desenhado.
+## Encerra o processo como _capture: sem o quit a ferramenta fica viva para sempre.
+func _capture_keep_input(output_path: String) -> void:
+	await RenderingServer.frame_post_draw
+	var image := get_viewport().get_texture().get_image()
+	var error := image.save_png(output_path)
+
+	if error == OK:
+		print("Screenshot salvo em %s" % output_path)
+	else:
+		push_error("Falha ao salvar screenshot (erro %d)" % error)
+
+	get_tree().quit(0 if error == OK else 1)
 
 
 func _capture(output_path: String) -> void:

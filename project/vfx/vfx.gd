@@ -8,6 +8,7 @@ const SOFT_TEXTURE_SIZE := 64
 
 var _soft_texture: ImageTexture
 var _scorch_texture: ImageTexture
+var _rotor_ring_texture: ImageTexture
 var _quad_mesh: QuadMesh
 var _debris_mesh: BoxMesh
 var _spark_mesh: BoxMesh
@@ -16,6 +17,7 @@ var _spark_mesh: BoxMesh
 func _ready() -> void:
 	_soft_texture = _make_soft_texture()
 	_scorch_texture = _make_scorch_texture()
+	_rotor_ring_texture = _make_rotor_ring_texture()
 
 	_spark_mesh = BoxMesh.new()
 	_spark_mesh.size = Vector3(0.07, 0.07, 0.5)
@@ -31,6 +33,12 @@ func _ready() -> void:
 ## particula em quad. Sem ela o quad aparece como retangulo de borda dura.
 func get_soft_texture() -> ImageTexture:
 	return _soft_texture
+
+
+## Anel de borrao de rotor: centro transparente, faixa suave onde as pontas
+## das pas varrem. Um disco cheio e branco parecia um prato em cima do heli.
+func get_rotor_ring_texture() -> ImageTexture:
+	return _rotor_ring_texture
 
 
 ## Rastro luminoso entre dois pontos (hitscan).
@@ -497,6 +505,22 @@ func _make_scorch_texture() -> ImageTexture:
 			var distance := offset.length() / wobble
 			var alpha := 1.0 - smoothstep(radius * 0.25, radius, distance)
 			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+
+	return ImageTexture.create_from_image(image)
+
+
+func _make_rotor_ring_texture() -> ImageTexture:
+	var size := 128
+	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var center := Vector2(size, size) * 0.5
+
+	for y in size:
+		for x in size:
+			var r := Vector2(x, y).distance_to(center) / (float(size) * 0.5)
+			## Nada ate 40% do raio, sobe ate ~85% e cai na borda: so a varredura
+			## das pontas fica visivel, que e onde o borrao real acontece.
+			var ring := smoothstep(0.4, 0.85, r) * (1.0 - smoothstep(0.9, 1.0, r))
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, ring))
 
 	return ImageTexture.create_from_image(image)
 

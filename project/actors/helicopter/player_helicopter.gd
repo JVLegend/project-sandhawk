@@ -374,17 +374,18 @@ func _build_main_rotor() -> void:
 
 	_rotor_blur = MeshInstance3D.new()
 	_rotor_blur.name = "RotorBlur"
-	var disc := CylinderMesh.new()
-	disc.top_radius = 6.5
-	disc.bottom_radius = 6.5
-	disc.height = 0.02
-	disc.radial_segments = 32
+	var disc := QuadMesh.new()
+	disc.size = Vector2(13.0, 13.0)
 	_rotor_blur.mesh = disc
+	_rotor_blur.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
 
+	## Anel ESCURO e translucido: as pas sao pretas, o borrao delas tambem.
+	## O disco branco cheio de antes parecia um prato sobre o helicoptero.
 	var blur_material := StandardMaterial3D.new()
 	blur_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	blur_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	blur_material.albedo_color = Color(0.82, 0.86, 0.9, 0.0)
+	blur_material.albedo_texture = Vfx.get_rotor_ring_texture()
+	blur_material.albedo_color = Color(0.1, 0.1, 0.11, 0.0)
 	blur_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_rotor_blur.material_override = blur_material
 	_rotor_pivot.add_child(_rotor_blur)

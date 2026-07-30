@@ -201,17 +201,16 @@ func _build_visual() -> void:
 
 	_rotor_blur = MeshInstance3D.new()
 	_rotor_blur.name = "RotorBlur"
-	var disc := CylinderMesh.new()
-	disc.top_radius = 4.9
-	disc.bottom_radius = 4.9
-	disc.height = 0.02
-	disc.radial_segments = 28
+	var disc := QuadMesh.new()
+	disc.size = Vector2(9.8, 9.8)
 	_rotor_blur.mesh = disc
+	_rotor_blur.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
 
 	var blur := StandardMaterial3D.new()
 	blur.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	blur.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	blur.albedo_color = Color(0.78, 0.8, 0.84, 0.3)
+	blur.albedo_texture = Vfx.get_rotor_ring_texture()
+	blur.albedo_color = Color(0.1, 0.1, 0.11, 0.16)
 	blur.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_rotor_blur.material_override = blur
 	_rotor_pivot.add_child(_rotor_blur)
