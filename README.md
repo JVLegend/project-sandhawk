@@ -42,7 +42,41 @@ O projeto segue três princípios inegociáveis:
 
 ---
 
-## 🎮 Como rodar
+## ⬇️ Baixar e jogar (sem instalar nada)
+
+Baixe a versão pronta na [página de **Releases**](https://github.com/JVLegend/desert-strike-rebuild/releases):
+não precisa de Godot, nem de git, nem de conhecimento técnico.
+
+### 🪟 Windows
+
+1. Baixe `ProjectSandhawk-vX.X.X-windows.zip` e **extraia a pasta** (botão direito → Extrair tudo).
+2. Dê dois cliques em `ProjectSandhawk.exe`.
+3. Na primeira vez o Windows SmartScreen pode avisar "aplicativo não reconhecido":
+   clique em **Mais informações → Executar assim mesmo**. Isso acontece porque o
+   executável não tem assinatura digital paga, não porque haja algo errado.
+4. Importante: o `ProjectSandhawk.pck` precisa ficar **na mesma pasta** do `.exe`.
+
+### 🍎 macOS
+
+1. Baixe `ProjectSandhawk-vX.X.X-macos.zip` e dê dois cliques para extrair.
+2. Na primeira vez, **não** dê dois cliques direto: clique com o **botão direito
+   no `ProjectSandhawk.app` → Abrir → Abrir**. Isso registra a exceção do Gatekeeper.
+3. Se o macOS ainda disser que o app "está danificado" (acontece em versões novas
+   do sistema com apps sem assinatura da Apple), rode uma vez no Terminal:
+
+   ```bash
+   xattr -cr ~/Downloads/ProjectSandhawk.app
+   ```
+
+   e abra normalmente depois. O aviso existe porque o app não é assinado/notarizado
+   pela Apple (isso custa uma conta de desenvolvedor), não porque haja risco.
+
+> 🐧 **Linux:** ainda não há build pronto, mas o jogo roda perfeitamente pelo
+> código-fonte (seção seguinte).
+
+---
+
+## 🛠️ Rodar pelo código-fonte (desenvolvedores)
 
 **Requisito:** [Godot 4.7+](https://godotengine.org/download) (no macOS: `brew install godot`).
 
