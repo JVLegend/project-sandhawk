@@ -63,6 +63,7 @@ func _run() -> void:
 	await _test_weapon_fire()
 	await _test_enemy_death()
 	await _test_player_damage()
+	await _test_pause()
 	await _test_hitscan_end_to_end()
 	await _test_fuel_drain()
 	await _test_pickup()
@@ -251,6 +252,37 @@ func _test_player_damage() -> void:
 
 	_expect(health.hp == armor_before - 50,
 		"Jogador deveria perder 50 de blindagem (antes %d, depois %d)" % [armor_before, health.hp])
+
+	var flash := _world.find_child("DamageFlash", true, false)
+	_expect(flash != null and flash.modulate.a > 0.0,
+		"HUD deveria acender o flash vermelho ao levar dano")
+
+
+## Pausa por evento: ESC congela a arvore, escolher CONTINUAR descongela.
+## Input.action_press nao passa por _unhandled_input; e preciso injetar o
+## evento de verdade com parse_input_event.
+func _test_pause() -> void:
+	_press_action_event("pause")
+	await process_frame
+	await process_frame
+
+	_expect(root.get_tree().paused, "ESC deveria pausar o jogo")
+	_expect(_world.find_child("PauseScreen", true, false) != null, "Menu de pausa nao apareceu")
+
+	## Segundo ESC = CONTINUAR (opcao 0).
+	_press_action_event("pause")
+	await process_frame
+	await process_frame
+
+	_expect(not root.get_tree().paused, "Segundo ESC deveria despausar")
+	await physics_frame
+
+
+func _press_action_event(action: String) -> void:
+	var event := InputEventAction.new()
+	event.action = action
+	event.pressed = true
+	Input.parse_input_event(event)
 
 
 ## Loop completo do jogador: mira assistida -> hitscan -> dano no inimigo.

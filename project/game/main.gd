@@ -16,6 +16,7 @@ var phase: int = Phase.TITLE
 var _world: MissionWorld
 var _hud: Hud
 var _title: TitleScreen
+var _pause: PauseScreen
 var _briefing: BriefingScreen
 var _debriefing: DebriefingScreen
 var _player: PlayerHelicopter
@@ -87,6 +88,26 @@ func _process(_delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("debug_restart"):
 		_restart()
+	elif event.is_action_pressed("pause") and phase == Phase.FLYING and _pause == null:
+		get_viewport().set_input_as_handled()
+		_show_pause()
+
+
+func _show_pause() -> void:
+	_pause = PauseScreen.new()
+	_pause.name = "PauseScreen"
+	add_child(_pause)
+	_pause.resumed.connect(func() -> void: _pause = null)
+	_pause.restart_requested.connect(func() -> void:
+		_pause = null
+		_restart()
+	)
+	_pause.quit_to_title_requested.connect(func() -> void:
+		_pause = null
+		## Voltar ao menu: reabilita a tela de titulo e recarrega.
+		GameState.title_shown = false
+		_restart()
+	)
 
 
 ## ---------------------------------------------------------------- fluxo
@@ -379,6 +400,10 @@ func _ensure_runtime_input_map() -> void:
 	_register_action("winch", [
 		_make_key_event(KEY_G),
 		_make_joy_button_event(JOY_BUTTON_A)
+	])
+	_register_action("pause", [
+		_make_key_event(KEY_ESCAPE),
+		_make_joy_button_event(JOY_BUTTON_START)
 	])
 	_register_action("debug_restart", [
 		_make_key_event(KEY_F5)

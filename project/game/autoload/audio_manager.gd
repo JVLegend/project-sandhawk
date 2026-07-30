@@ -40,6 +40,8 @@ var _music_thread: Thread
 
 
 func _ready() -> void:
+	## Musica continua no menu de pausa: o resto da arvore congela, este nao.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_setup_buses()
 	_build_streams()
 	_build_ui_player()

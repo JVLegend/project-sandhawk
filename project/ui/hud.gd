@@ -35,6 +35,8 @@ var _waypoint_marker: Control
 var _waypoint_arrow: Label
 var _waypoint_distance: Label
 
+var _damage_flash: ColorRect
+var _last_armor := -1
 var _waypoint_position := Vector3.ZERO
 var _waypoint_active := false
 var _message_timer := 0.0
@@ -123,6 +125,8 @@ func show_message(text: String, duration: float = 2.0, color: Color = COLOR_TEXT
 
 func _process(delta: float) -> void:
 	_blink_time += delta
+	if _damage_flash != null and _damage_flash.modulate.a > 0.0:
+		_damage_flash.modulate.a = maxf(0.0, _damage_flash.modulate.a - delta * 2.2)
 	_tick_message(delta)
 	_tick_fuel_alarm()
 	_update_waypoint()
@@ -214,6 +218,11 @@ func _on_armor_changed(current: int, maximum: int) -> void:
 	if _armor_bar == null:
 		return
 
+	## Flash vermelho so quando a blindagem CAI: curar nao pisca.
+	if _last_armor >= 0 and current < _last_armor and _damage_flash != null:
+		_damage_flash.modulate.a = clampf(float(_last_armor - current) / 60.0, 0.25, 0.8)
+	_last_armor = current
+
 	_armor_bar.max_value = maximum
 	_armor_bar.value = current
 	_armor_label.text = "BLINDAGEM  %d" % current
@@ -293,11 +302,23 @@ func _build_ui() -> void:
 	UiTheme.apply(_root)
 	add_child(_root)
 
+	_build_damage_flash()
 	_build_resource_panel()
 	_build_weapon_panel()
 	_build_top_bar()
 	_build_message_label()
 	_build_waypoint_marker()
+
+
+## Vinheta vermelha que acende ao levar dano e esvai em _process.
+func _build_damage_flash() -> void:
+	_damage_flash = ColorRect.new()
+	_damage_flash.name = "DamageFlash"
+	_damage_flash.color = Color(0.85, 0.12, 0.08)
+	_damage_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_damage_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_damage_flash.modulate.a = 0.0
+	_root.add_child(_damage_flash)
 
 
 func _build_resource_panel() -> void:
