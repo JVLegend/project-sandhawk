@@ -16,6 +16,8 @@ var homing_turn_rate: float = 0.0
 var from_player: bool = true
 var body_color: Color = Color(1.0, 0.55, 0.22)
 var source: Node = null
+var collision_radius: float = 0.35
+var proximity_fuse_radius: float = 0.0
 
 var _collision_mask: int = CombatLayers.PLAYER_SHOT_MASK
 var _trail: GPUParticles3D
@@ -33,6 +35,11 @@ func setup(definition: WeaponDefinition, start_direction: Vector3, shooter_is_pl
 	homing_target = target
 	lifetime = definition.range_meters / maxf(1.0, definition.projectile_speed) + 0.5
 	_collision_mask = CombatLayers.PLAYER_SHOT_MASK if shooter_is_player else CombatLayers.ENEMY_SHOT_MASK
+	collision_radius = maxf(0.35, splash_radius * 0.08)
+	proximity_fuse_radius = maxf(0.0, splash_radius * 0.2)
+	if definition.mode == WeaponDefinition.Mode.HOMING:
+		collision_radius = maxf(collision_radius, 0.55)
+		proximity_fuse_radius = maxf(proximity_fuse_radius, 1.1)
 
 
 ## Usado pelos inimigos, que nao tem WeaponDefinition.
@@ -58,6 +65,11 @@ func setup_simple(
 	from_player = false
 	lifetime = p_range / maxf(1.0, p_speed) + 0.5
 	_collision_mask = CombatLayers.ENEMY_SHOT_MASK
+	collision_radius = maxf(0.35, splash_radius * 0.08)
+	proximity_fuse_radius = maxf(0.0, splash_radius * 0.2)
+	if p_homing_turn_rate > 0.0:
+		collision_radius = maxf(collision_radius, 0.5)
+		proximity_fuse_radius = maxf(proximity_fuse_radius, 0.9)
 
 
 func _ready() -> void:
@@ -72,16 +84,31 @@ func _physics_process(delta: float) -> void:
 
 	_update_homing(delta)
 
+	if _should_proximity_detonate():
+		var target_point := CombatUtils.aim_point_for(homing_target)
+		global_position = target_point
+		_detonate(target_point, homing_target)
+		return
+
 	var from := global_position
 	var to := from + direction * speed * delta
 
 	var query := PhysicsRayQueryParameters3D.create(from, to, _collision_mask)
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
+	query.exclude = _excluded_rids()
 
-	var result := get_world_3d().direct_space_state.intersect_ray(query)
-	if not result.is_empty():
-		_detonate(result.get("position", to), result.get("collider"))
+	var world_hit := get_world_3d().direct_space_state.intersect_ray(query)
+	var target_hit := _find_target_hit(from, to)
+	if _is_hit_closer(from, target_hit, world_hit):
+		var target_position: Vector3 = target_hit.get("position", to)
+		global_position = target_position
+		_detonate(target_position, target_hit.get("collider"))
+		return
+	if not world_hit.is_empty():
+		var world_position: Vector3 = world_hit.get("position", to)
+		global_position = world_position
+		_detonate(world_position, world_hit.get("collider"))
 		return
 
 	global_position = to
@@ -111,6 +138,67 @@ func _update_homing(delta: float) -> void:
 	if axis.length_squared() < 0.000001:
 		return
 	direction = direction.rotated(axis.normalized(), max_turn).normalized()
+
+
+func _should_proximity_detonate() -> bool:
+	if proximity_fuse_radius <= 0.0 or homing_target == null or not is_instance_valid(homing_target):
+		return false
+
+	var target_point := CombatUtils.aim_point_for(homing_target)
+	var detonation_radius := CombatUtils.hit_radius_for(homing_target) + proximity_fuse_radius
+	return global_position.distance_to(target_point) <= detonation_radius
+
+
+func _find_target_hit(segment_start: Vector3, segment_end: Vector3) -> Dictionary:
+	var group := "enemy" if from_player else "player"
+	var best_distance := INF
+	var best_hit := {}
+
+	for node in get_tree().get_nodes_in_group(group):
+		if not is_instance_valid(node) or node == source:
+			continue
+
+		var target := node as Node3D
+		if target == null or not target.has_method("take_damage"):
+			continue
+		if target.has_method("is_alive") and not target.is_alive():
+			continue
+
+		var aim_point := CombatUtils.aim_point_for(target)
+		var closest := CombatUtils.closest_point_on_segment(aim_point, segment_start, segment_end)
+		var effective_radius := CombatUtils.hit_radius_for(target) + collision_radius
+		if aim_point.distance_to(closest) > effective_radius:
+			continue
+
+		var travel_distance := segment_start.distance_to(closest)
+		if travel_distance >= best_distance:
+			continue
+
+		best_distance = travel_distance
+		best_hit = {
+			"collider": target,
+			"position": closest.lerp(aim_point, 0.35),
+		}
+
+	return best_hit
+
+
+func _is_hit_closer(origin: Vector3, target_hit: Dictionary, world_hit: Dictionary) -> bool:
+	if target_hit.is_empty():
+		return false
+	if world_hit.is_empty():
+		return true
+
+	var target_position: Vector3 = target_hit.get("position", origin)
+	var world_position: Vector3 = world_hit.get("position", origin)
+	return origin.distance_to(target_position) <= origin.distance_to(world_position)
+
+
+func _excluded_rids() -> Array[RID]:
+	var excluded: Array[RID] = []
+	if source is CollisionObject3D:
+		excluded.append((source as CollisionObject3D).get_rid())
+	return excluded
 
 
 func _detonate(impact_point: Vector3, collider: Object) -> void:

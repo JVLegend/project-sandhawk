@@ -20,7 +20,10 @@ func setup(p_definition: EnemyDefinition) -> void:
 
 
 func get_aim_point() -> Vector3:
-	return global_position + Vector3.UP * 0.35
+	var aim_height := 0.9
+	if definition != null:
+		aim_height = definition.body_size.y * 0.55
+	return global_position + Vector3.UP * aim_height
 
 
 func _tick_state(delta: float) -> void:

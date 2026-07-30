@@ -56,3 +56,50 @@ static func aim_point_for(target: Node3D) -> Vector3:
 	if target.has_method("get_aim_point"):
 		return target.get_aim_point()
 	return target.global_position
+
+
+static func closest_point_on_segment(point: Vector3, segment_start: Vector3, segment_end: Vector3) -> Vector3:
+	var segment := segment_end - segment_start
+	var segment_length_squared := segment.length_squared()
+	if segment_length_squared < 0.000001:
+		return segment_start
+
+	var t := clampf((point - segment_start).dot(segment) / segment_length_squared, 0.0, 1.0)
+	return segment_start + segment * t
+
+
+static func distance_point_to_segment(point: Vector3, segment_start: Vector3, segment_end: Vector3) -> float:
+	return point.distance_to(closest_point_on_segment(point, segment_start, segment_end))
+
+
+static func hit_radius_for(target: Node3D) -> float:
+	if target == null:
+		return 0.6
+
+	var collision_shape := _find_collision_shape(target)
+	if collision_shape == null or collision_shape.shape == null:
+		return 0.6
+
+	var shape := collision_shape.shape
+	if shape is SphereShape3D:
+		return shape.radius
+	if shape is CapsuleShape3D:
+		return maxf(shape.radius, shape.height * 0.5)
+	if shape is CylinderShape3D:
+		return shape.radius
+	if shape is BoxShape3D:
+		return maxf(maxf(shape.size.x, shape.size.y), shape.size.z) * 0.5
+
+	return 0.6
+
+
+static func _find_collision_shape(node: Node) -> CollisionShape3D:
+	for child in node.get_children():
+		if child is CollisionShape3D and child.shape != null and not child.disabled:
+			return child
+
+		var nested := _find_collision_shape(child)
+		if nested != null:
+			return nested
+
+	return null

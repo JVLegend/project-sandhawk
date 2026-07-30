@@ -64,7 +64,7 @@ func _physics_process(delta: float) -> void:
 func get_aim_point() -> Vector3:
 	if definition == null:
 		return global_position
-	return global_position + Vector3.UP * definition.body_size.y * 0.25
+	return global_position + Vector3.UP * definition.body_size.y * 0.5
 
 
 func is_alive() -> bool:
