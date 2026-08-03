@@ -35,6 +35,7 @@ var _waypoint_marker: Control
 var _waypoint_arrow: Label
 var _waypoint_distance: Label
 
+var _minimap: MiniMap
 var _damage_flash: ColorRect
 var _last_armor := -1
 var _waypoint_position := Vector3.ZERO
@@ -42,6 +43,92 @@ var _waypoint_active := false
 var _message_timer := 0.0
 var _blink_time := 0.0
 var _fuel_alarm := false
+
+
+## Minimapa de canto: a versao viva da carta tatica do briefing.
+## Zonas e base vem dos dados da missao; inimigos, resgatados e estruturas
+## vem dos grupos da arvore, entao o mapa reflete o que ainda esta vivo.
+class MiniMap extends Control:
+	const PAPER := Color(0.09, 0.1, 0.11, 0.82)
+	const EDGE := Color(0.45, 0.5, 0.54, 0.6)
+	const ZONE_COLORS := {
+		"village": Color(0.4, 0.62, 0.36, 0.5),
+		"outpost": Color(0.7, 0.3, 0.24, 0.5),
+		"camp": Color(0.34, 0.6, 0.72, 0.5),
+	}
+
+	var world_data: Dictionary = {}
+	var world_size := 900.0
+	var player: Node3D
+	var waypoint := Vector3.ZERO
+	var waypoint_active := false
+
+	func _process(_delta: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		draw_rect(Rect2(Vector2.ZERO, size), PAPER)
+		draw_rect(Rect2(Vector2.ZERO, size), EDGE, false, 1.5)
+
+		for zone in world_data.get("zones", []):
+			var center := _project_array(zone.get("position", [0, 0]))
+			var radius := float(zone.get("radius", 40.0)) / world_size * size.x
+			var color: Color = ZONE_COLORS.get(str(zone.get("kind", "")), Color(0.5, 0.5, 0.5, 0.4))
+			draw_circle(center, maxf(radius, 3.0), color)
+
+		var base_point := _project_array(world_data.get("base", [0, 0]))
+		draw_circle(base_point, 3.5, Color(0.42, 0.82, 0.94))
+
+		## Estruturas-alvo vivas: quadradinho vermelho.
+		for node in get_tree().get_nodes_in_group("structure"):
+			if node.has_method("is_alive") and not node.is_alive():
+				continue
+			var point := _project_world(node.global_position)
+			draw_rect(Rect2(point - Vector2(2.5, 2.5), Vector2(5.0, 5.0)), Color(0.94, 0.34, 0.29), false, 1.5)
+
+		## Inimigos vivos: pontinho vermelho fraco (radar, nao wallhack detalhado).
+		for node in get_tree().get_nodes_in_group("enemy"):
+			if node is Node3D:
+				draw_circle(_project_world(node.global_position), 1.4, Color(0.9, 0.35, 0.3, 0.75))
+
+		## Resgatados: cruz verde, o que o jogador mais procura no mapa.
+		for node in get_tree().get_nodes_in_group("pow"):
+			if node is Node3D:
+				var point := _project_world(node.global_position)
+				draw_line(point + Vector2(-3.0, 0.0), point + Vector2(3.0, 0.0), Color(0.45, 0.95, 0.55), 1.8)
+				draw_line(point + Vector2(0.0, -3.0), point + Vector2(0.0, 3.0), Color(0.45, 0.95, 0.55), 1.8)
+
+		if waypoint_active:
+			var w := _project_world(waypoint)
+			draw_arc(w, 5.0, 0.0, TAU, 12, Color(0.42, 0.82, 0.94), 1.4)
+
+		if player != null and is_instance_valid(player):
+			var origin := _project_world(player.global_position)
+			## Triangulo apontando para onde o nariz do helicoptero aponta.
+			var heading := -player.global_transform.basis.z
+			var forward := Vector2(heading.x, heading.z).normalized()
+			var side := Vector2(-forward.y, forward.x)
+			draw_colored_polygon(PackedVector2Array([
+				origin + forward * 6.0,
+				origin - forward * 3.0 + side * 4.0,
+				origin - forward * 3.0 - side * 4.0,
+			]), Color(0.96, 0.74, 0.28))
+
+	func _project_array(value) -> Vector2:
+		var point := Vector2.ZERO
+		if value is Array and value.size() >= 2:
+			point = Vector2(float(value[0]), float(value[1]))
+		return _project(point)
+
+	func _project_world(position: Vector3) -> Vector2:
+		return _project(Vector2(position.x, position.z))
+
+	func _project(world_point: Vector2) -> Vector2:
+		var normalized := (world_point / world_size) + Vector2(0.5, 0.5)
+		return Vector2(
+			clampf(normalized.x, 0.02, 0.98) * size.x,
+			clampf(normalized.y, 0.02, 0.98) * size.y
+		)
 
 
 func setup(player: PlayerHelicopter) -> void:
@@ -99,6 +186,9 @@ func connect_base(base: FriendlyBase) -> void:
 func set_waypoint(target_position: Vector3, label: String) -> void:
 	_waypoint_position = target_position
 	_waypoint_active = true
+	if _minimap != null:
+		_minimap.waypoint = target_position
+		_minimap.waypoint_active = true
 	if _objective_label != null:
 		_objective_label.text = label.to_upper()
 
@@ -303,11 +393,25 @@ func _build_ui() -> void:
 	add_child(_root)
 
 	_build_damage_flash()
+	_build_minimap()
 	_build_resource_panel()
 	_build_weapon_panel()
 	_build_top_bar()
 	_build_message_label()
 	_build_waypoint_marker()
+
+
+func _build_minimap() -> void:
+	_minimap = MiniMap.new()
+	_minimap.name = "MiniMap"
+	_minimap.custom_minimum_size = Vector2(172.0, 172.0)
+	_minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_minimap.position = Vector2(-190.0, 18.0)
+	_minimap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_minimap.world_data = MissionManager.get_world_data()
+	_minimap.world_size = float(_minimap.world_data.get("size", 900.0))
+	_minimap.player = _player
+	_root.add_child(_minimap)
 
 
 ## Vinheta vermelha que acende ao levar dano e esvai em _process.
