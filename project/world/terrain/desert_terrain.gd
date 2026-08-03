@@ -13,11 +13,13 @@ const SAND_COLOR_TEXTURE := preload("res://assets/textures/sand_color.jpg")
 const SAND_NORMAL_TEXTURE := preload("res://assets/textures/sand_normal.jpg")
 const SAND_ROUGHNESS_TEXTURE := preload("res://assets/textures/sand_roughness.jpg")
 
-const SAND_LOW := Color(0.55, 0.44, 0.29)
-const SAND_HIGH := Color(0.74, 0.63, 0.43)
-const ROCK := Color(0.33, 0.29, 0.26)
-const GRAVEL := Color(0.44, 0.38, 0.3)
-const CLAY := Color(0.5, 0.34, 0.23)
+## Paleta padrao (deserto de areia). Missoes podem sobrescrever via "palette"
+## no JSON do mundo, o que da bioma proprio sem codigo novo.
+var sand_low := Color(0.55, 0.44, 0.29)
+var sand_high := Color(0.74, 0.63, 0.43)
+var rock := Color(0.33, 0.29, 0.26)
+var gravel := Color(0.44, 0.38, 0.3)
+var clay := Color(0.5, 0.34, 0.23)
 
 var size := 900.0
 var resolution := 220
@@ -29,7 +31,8 @@ var _flat_spots: Array = []
 
 
 ## flat_spots: lista de {"position": Vector2, "radius": float}
-func generate(p_size: float, p_amplitude: float, flat_spots: Array, seed_value: int = 20260729) -> void:
+func generate(p_size: float, p_amplitude: float, flat_spots: Array, seed_value: int = 20260729, palette: Dictionary = {}) -> void:
+	_apply_palette(palette)
 	size = p_size
 	amplitude = p_amplitude
 	_flat_spots = flat_spots
@@ -48,6 +51,22 @@ func generate(p_size: float, p_amplitude: float, flat_spots: Array, seed_value: 
 
 	_build_mesh()
 	_build_collision()
+
+
+## Cores vem como strings html ("aa5533") no JSON da missao.
+func _apply_palette(palette: Dictionary) -> void:
+	if palette.is_empty():
+		return
+	if palette.has("sand_low"):
+		sand_low = Color.html(str(palette["sand_low"]))
+	if palette.has("sand_high"):
+		sand_high = Color.html(str(palette["sand_high"]))
+	if palette.has("rock"):
+		rock = Color.html(str(palette["rock"]))
+	if palette.has("gravel"):
+		gravel = Color.html(str(palette["gravel"]))
+	if palette.has("clay"):
+		clay = Color.html(str(palette["clay"]))
 
 
 func sample_height(x: float, z: float) -> float:
@@ -150,19 +169,19 @@ func _color_for(height: float, normal: Vector3, x: float, z: float) -> Color:
 	var slope := 1.0 - clampf(normal.y, 0.0, 1.0)
 	var elevation := clampf(inverse_lerp(-amplitude * 0.9, amplitude * 0.9, height), 0.0, 1.0)
 
-	var color := SAND_LOW.lerp(SAND_HIGH, elevation)
+	var color := sand_low.lerp(sand_high, elevation)
 
 	## Encosta ingreme vira rocha exposta.
-	color = color.lerp(ROCK, clampf(slope * 5.5, 0.0, 0.85))
+	color = color.lerp(rock, clampf(slope * 5.5, 0.0, 0.85))
 
 	## Manchas de terreno de ~50m. Independem da altura, entao as zonas achatadas
 	## tambem ganham variacao em vez de virar um lencol de areia uniforme.
 	var region := _noise_base.get_noise_2d(x * 6.0 - 900.0, z * 6.0 + 640.0)
-	color = color.lerp(CLAY, clampf(region * 0.6 + 0.22, 0.0, 0.45))
+	color = color.lerp(clay, clampf(region * 0.6 + 0.22, 0.0, 0.45))
 
 	## Cascalho fino: quebra a uniformidade de perto.
 	var patch := _noise_detail.get_noise_2d(x * 2.6 + 500.0, z * 2.6 - 320.0)
-	color = color.lerp(GRAVEL, clampf(patch * 0.5 + 0.16, 0.0, 0.36))
+	color = color.lerp(gravel, clampf(patch * 0.5 + 0.16, 0.0, 0.36))
 
 	## Escurece levemente as depressoes: oclusao barata que da volume as dunas.
 	color = color.darkened(clampf((1.0 - elevation) * 0.16, 0.0, 0.16))

@@ -80,7 +80,8 @@ func _move_selection(direction: int) -> void:
 		return
 
 	_selected = target
-	AudioManager.play_ui_click()
+	## Navegar e mais baixo que confirmar: hierarquia sonora dos menus.
+	AudioManager.play_ui(AudioManager.Sfx.UI_CLICK, -16.0)
 	_refresh_rows()
 
 

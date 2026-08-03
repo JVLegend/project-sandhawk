@@ -53,7 +53,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _move(direction: int) -> void:
 	_selected = clampi(_selected + direction, 0, OPTIONS.size() - 1)
-	AudioManager.play_ui_click()
+	## Navegar e mais baixo que confirmar: hierarquia sonora dos menus.
+	AudioManager.play_ui(AudioManager.Sfx.UI_CLICK, -16.0)
 	_refresh()
 
 

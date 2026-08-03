@@ -57,6 +57,11 @@ class MiniMap extends Control:
 		"camp": Color(0.34, 0.6, 0.72, 0.5),
 	}
 
+	## Inimigos moveis so aparecem dentro deste raio do jogador: o minimapa e um
+	## radar, nao onisciencia. Estruturas e resgatados sao inteligencia da missao
+	## e ficam sempre visiveis.
+	const RADAR_RANGE := 180.0
+
 	var world_data: Dictionary = {}
 	var world_size := 900.0
 	var player: Node3D
@@ -86,9 +91,12 @@ class MiniMap extends Control:
 			var point := _project_world(node.global_position)
 			draw_rect(Rect2(point - Vector2(2.5, 2.5), Vector2(5.0, 5.0)), Color(0.94, 0.34, 0.29), false, 1.5)
 
-		## Inimigos vivos: pontinho vermelho fraco (radar, nao wallhack detalhado).
+		## Inimigos vivos dentro do alcance do radar.
+		var player_ok := player != null and is_instance_valid(player)
 		for node in get_tree().get_nodes_in_group("enemy"):
 			if node is Node3D:
+				if player_ok and node.global_position.distance_to(player.global_position) > RADAR_RANGE:
+					continue
 				draw_circle(_project_world(node.global_position), 1.4, Color(0.9, 0.35, 0.3, 0.75))
 
 		## Resgatados: cruz verde, o que o jogador mais procura no mapa.
@@ -104,6 +112,11 @@ class MiniMap extends Control:
 
 		if player != null and is_instance_valid(player):
 			var origin := _project_world(player.global_position)
+
+			## Circulo do alcance do radar, para o limite do que se ve ser honesto.
+			var radar_px := RADAR_RANGE / world_size * size.x
+			draw_arc(origin, radar_px, 0.0, TAU, 32, Color(0.96, 0.74, 0.28, 0.16), 1.0)
+
 			## Triangulo apontando para onde o nariz do helicoptero aponta.
 			var heading := -player.global_transform.basis.z
 			var forward := Vector2(heading.x, heading.z).normalized()

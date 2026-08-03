@@ -14,7 +14,10 @@
       "id": "depots",
       "label": "Destruir os dois depositos de combustivel",
       "type": "destroy",
-      "targets": ["depot_north", "depot_south"],
+      "targets": [
+        "depot_north",
+        "depot_south"
+      ],
       "required": true
     },
     {
@@ -28,15 +31,21 @@
       "id": "hq",
       "label": "Destruir o bunker de comando",
       "type": "destroy",
-      "targets": ["hq_zafir"],
+      "targets": [
+        "hq_zafir"
+      ],
       "required": true,
-      "locked_by": ["depots"]
+      "locked_by": [
+        "depots"
+      ]
     },
     {
       "id": "blackbox",
       "label": "Recuperar a caixa-preta do comboio",
       "type": "collect",
-      "targets": ["blackbox_1"],
+      "targets": [
+        "blackbox_1"
+      ],
       "required": false
     }
   ],
@@ -47,73 +56,389 @@
     "seed": 20260730,
     "size": 1150.0,
     "amplitude": 6.2,
-    "base": [0.0, 0.0],
-    "spawn": [0.0, 24.0],
+    "base": [
+      0.0,
+      0.0
+    ],
+    "spawn": [
+      0.0,
+      24.0
+    ],
     "scatter": {
       "rocks": 210,
       "dead_trees": 52
     },
     "zones": [
-      {"id": "zafir_village", "label": "Vila Baixa de Zafir", "kind": "village", "position": [190.0, -220.0], "radius": 62.0, "houses": 10, "palms": 10},
-      {"id": "depot_north_zone", "label": "Deposito Norte", "kind": "outpost", "position": [-260.0, -180.0], "radius": 56.0},
-      {"id": "depot_south_zone", "label": "Deposito Sul", "kind": "outpost", "position": [120.0, 180.0], "radius": 54.0},
-      {"id": "survivor_camp", "label": "Canteiro do comboio", "kind": "camp", "position": [320.0, 140.0], "radius": 58.0, "tents": 6},
-      {"id": "hq_compound", "label": "Bunker de Zafir", "kind": "outpost", "position": [360.0, 330.0], "radius": 74.0}
+      {
+        "id": "zafir_village",
+        "label": "Vila Baixa de Zafir",
+        "kind": "village",
+        "position": [
+          190.0,
+          -220.0
+        ],
+        "radius": 62.0,
+        "houses": 10,
+        "palms": 10
+      },
+      {
+        "id": "depot_north_zone",
+        "label": "Deposito Norte",
+        "kind": "outpost",
+        "position": [
+          -260.0,
+          -180.0
+        ],
+        "radius": 56.0
+      },
+      {
+        "id": "depot_south_zone",
+        "label": "Deposito Sul",
+        "kind": "outpost",
+        "position": [
+          120.0,
+          180.0
+        ],
+        "radius": 54.0
+      },
+      {
+        "id": "survivor_camp",
+        "label": "Canteiro do comboio",
+        "kind": "camp",
+        "position": [
+          320.0,
+          140.0
+        ],
+        "radius": 58.0,
+        "tents": 6
+      },
+      {
+        "id": "hq_compound",
+        "label": "Bunker de Zafir",
+        "kind": "outpost",
+        "position": [
+          360.0,
+          330.0
+        ],
+        "radius": 74.0
+      }
     ],
     "structures": [
-      {"id": "depot_north", "kind": "depot", "position": [-260.0, -180.0]},
-      {"id": "depot_south", "kind": "depot", "position": [120.0, 180.0]},
-      {"id": "hq_zafir", "kind": "hq", "position": [360.0, 330.0]}
+      {
+        "id": "depot_north",
+        "kind": "depot",
+        "position": [
+          -260.0,
+          -180.0
+        ]
+      },
+      {
+        "id": "depot_south",
+        "kind": "depot",
+        "position": [
+          120.0,
+          180.0
+        ]
+      },
+      {
+        "id": "hq_zafir",
+        "kind": "hq",
+        "position": [
+          360.0,
+          330.0
+        ]
+      }
     ],
     "enemies": [
-      {"kind": "aaa_gun", "position": [-286.0, -204.0]},
-      {"kind": "aaa_gun", "position": [-224.0, -154.0]},
-      {"kind": "soldier_ak", "position": [-282.0, -166.0]},
-      {"kind": "soldier_ak", "position": [-248.0, -218.0]},
-      {"kind": "soldier_ak", "position": [-214.0, -192.0]},
-
-      {"kind": "aaa_gun", "position": [92.0, 156.0]},
-      {"kind": "aaa_gun", "position": [148.0, 210.0]},
-      {"kind": "soldier_ak", "position": [84.0, 196.0]},
-      {"kind": "soldier_ak", "position": [136.0, 150.0]},
-      {"kind": "soldier_ak", "position": [166.0, 188.0]},
-
-      {"kind": "aaa_gun", "position": [324.0, 298.0]},
-      {"kind": "aaa_gun", "position": [404.0, 304.0]},
-      {"kind": "sam_launcher", "position": [332.0, 384.0]},
-      {"kind": "sam_launcher", "position": [228.0, 256.0]},
-      {"kind": "soldier_ak", "position": [320.0, 346.0]},
-      {"kind": "soldier_ak", "position": [356.0, 292.0]},
-      {"kind": "soldier_ak", "position": [394.0, 338.0]},
-      {"kind": "soldier_ak", "position": [378.0, 372.0]},
-
-      {"kind": "soldier_ak", "position": [286.0, 124.0]},
-      {"kind": "soldier_ak", "position": [334.0, 184.0]},
-      {"kind": "soldier_ak", "position": [212.0, 24.0]},
-      {"kind": "soldier_ak", "position": [142.0, -108.0]}
+      {
+        "kind": "aaa_gun",
+        "position": [
+          -286.0,
+          -204.0
+        ]
+      },
+      {
+        "kind": "aaa_gun",
+        "position": [
+          -224.0,
+          -154.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          -282.0,
+          -166.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          -248.0,
+          -218.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          -214.0,
+          -192.0
+        ]
+      },
+      {
+        "kind": "aaa_gun",
+        "position": [
+          92.0,
+          156.0
+        ]
+      },
+      {
+        "kind": "aaa_gun",
+        "position": [
+          148.0,
+          210.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          84.0,
+          196.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          136.0,
+          150.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          166.0,
+          188.0
+        ]
+      },
+      {
+        "kind": "aaa_gun",
+        "position": [
+          324.0,
+          298.0
+        ]
+      },
+      {
+        "kind": "aaa_gun",
+        "position": [
+          404.0,
+          304.0
+        ]
+      },
+      {
+        "kind": "sam_launcher",
+        "position": [
+          332.0,
+          384.0
+        ]
+      },
+      {
+        "kind": "sam_launcher",
+        "position": [
+          228.0,
+          256.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          320.0,
+          346.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          356.0,
+          292.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          394.0,
+          338.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          378.0,
+          372.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          286.0,
+          124.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          334.0,
+          184.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          212.0,
+          24.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          142.0,
+          -108.0
+        ]
+      }
     ],
     "pows": [
-      [304.0, 114.0],
-      [330.0, 112.0],
-      [346.0, 136.0],
-      [302.0, 160.0],
-      [326.0, 168.0],
-      [348.0, 158.0]
+      [
+        304.0,
+        114.0
+      ],
+      [
+        330.0,
+        112.0
+      ],
+      [
+        346.0,
+        136.0
+      ],
+      [
+        302.0,
+        160.0
+      ],
+      [
+        326.0,
+        168.0
+      ],
+      [
+        348.0,
+        158.0
+      ]
     ],
     "pickups": [
-      {"kind": "fuel", "position": [-138.0, -82.0]},
-      {"kind": "fuel", "position": [44.0, 102.0]},
-      {"kind": "fuel", "position": [246.0, 198.0]},
-      {"kind": "fuel", "position": [226.0, 300.0]},
-      {"kind": "armor", "position": [-206.0, -144.0]},
-      {"kind": "armor", "position": [150.0, 118.0]},
-      {"kind": "armor", "position": [298.0, 254.0]},
-      {"kind": "ammo_machinegun", "position": [58.0, 52.0]},
-      {"kind": "ammo_machinegun", "position": [254.0, 132.0]},
-      {"kind": "ammo_rockets", "position": [-198.0, -222.0]},
-      {"kind": "ammo_rockets", "position": [174.0, 228.0]},
-      {"kind": "ammo_missiles", "position": [204.0, 280.0]},
-      {"kind": "intel", "id": "blackbox_1", "position": [286.0, 146.0]}
-    ]
+      {
+        "kind": "fuel",
+        "position": [
+          -138.0,
+          -82.0
+        ]
+      },
+      {
+        "kind": "fuel",
+        "position": [
+          44.0,
+          102.0
+        ]
+      },
+      {
+        "kind": "fuel",
+        "position": [
+          246.0,
+          198.0
+        ]
+      },
+      {
+        "kind": "fuel",
+        "position": [
+          226.0,
+          300.0
+        ]
+      },
+      {
+        "kind": "armor",
+        "position": [
+          -206.0,
+          -144.0
+        ]
+      },
+      {
+        "kind": "armor",
+        "position": [
+          150.0,
+          118.0
+        ]
+      },
+      {
+        "kind": "armor",
+        "position": [
+          298.0,
+          254.0
+        ]
+      },
+      {
+        "kind": "ammo_machinegun",
+        "position": [
+          58.0,
+          52.0
+        ]
+      },
+      {
+        "kind": "ammo_machinegun",
+        "position": [
+          254.0,
+          132.0
+        ]
+      },
+      {
+        "kind": "ammo_rockets",
+        "position": [
+          -198.0,
+          -222.0
+        ]
+      },
+      {
+        "kind": "ammo_rockets",
+        "position": [
+          174.0,
+          228.0
+        ]
+      },
+      {
+        "kind": "ammo_missiles",
+        "position": [
+          204.0,
+          280.0
+        ]
+      },
+      {
+        "kind": "intel",
+        "id": "blackbox_1",
+        "position": [
+          286.0,
+          146.0
+        ]
+      }
+    ],
+    "palette": {
+      "sand_low": "6b3f2a",
+      "sand_high": "9c6b44",
+      "rock": "4a3230",
+      "gravel": "7a5238",
+      "clay": "8a4a2e"
+    },
+    "mood": {
+      "sky_top": "3a4f7d",
+      "sky_horizon": "e8a05c",
+      "sun_color": "ffd9a0",
+      "sun_energy": 1.0,
+      "sun_elevation": -30.0,
+      "fog_color": "d9905a"
+    }
   }
 }

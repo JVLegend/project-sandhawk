@@ -45,8 +45,8 @@ var _zones: Array = []
 func build(world_data: Dictionary) -> void:
 	_rng.seed = int(world_data.get("seed", 20260729))
 
-	_build_environment()
-	_build_sun()
+	_build_environment(world_data)
+	_build_sun(world_data)
 	_build_terrain(world_data)
 	_build_horizon(world_data)
 	_build_atmospherics(world_data)
@@ -76,10 +76,13 @@ func find_zone(zone_id: String) -> Dictionary:
 
 ## ---------------------------------------------------------------- ambiente
 
-func _build_environment() -> void:
+func _build_environment(world_data: Dictionary) -> void:
+	## "mood" no JSON da missao tinge ceu, sol e nevoa: bioma sem codigo novo.
+	var mood: Dictionary = world_data.get("mood", {})
+
 	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color(0.31, 0.52, 0.78)
-	sky_material.sky_horizon_color = Color(0.85, 0.78, 0.62)
+	sky_material.sky_top_color = _mood_color(mood, "sky_top", Color(0.31, 0.52, 0.78))
+	sky_material.sky_horizon_color = _mood_color(mood, "sky_horizon", Color(0.85, 0.78, 0.62))
 	sky_material.sky_curve = 0.15
 	sky_material.ground_bottom_color = Color(0.5, 0.42, 0.3)
 	sky_material.ground_horizon_color = Color(0.82, 0.74, 0.58)
@@ -133,7 +136,7 @@ func _build_environment() -> void:
 	## Densidade baixa de proposito. Nevoa de altura fica desligada: com a camera
 	## quase de cima ela cobre a cena inteira em vez de so o horizonte.
 	environment.fog_enabled = true
-	environment.fog_light_color = Color(0.82, 0.74, 0.58)
+	environment.fog_light_color = _mood_color(mood, "fog_color", Color(0.82, 0.74, 0.58))
 	environment.fog_light_energy = 1.0
 	environment.fog_sun_scatter = 0.2
 	## Densidades recalibradas depois de afastar a camera: com o dobro de
@@ -146,7 +149,7 @@ func _build_environment() -> void:
 	## O volume precisa passar do alcance visivel, senao a borda dele aparece
 	## como uma faixa reta atravessando a tela.
 	environment.volumetric_fog_length = 200.0
-	environment.volumetric_fog_albedo = Color(0.85, 0.76, 0.62)
+	environment.volumetric_fog_albedo = _mood_color(mood, "fog_color", Color(0.85, 0.76, 0.62))
 	environment.volumetric_fog_emission = Color(0.0, 0.0, 0.0)
 	environment.volumetric_fog_detail_spread = 9.0
 	environment.volumetric_fog_gi_inject = 0.35
@@ -162,12 +165,15 @@ func _build_environment() -> void:
 	add_child(world_environment)
 
 
-func _build_sun() -> void:
+func _build_sun(world_data: Dictionary) -> void:
+	var mood: Dictionary = world_data.get("mood", {})
+
 	var sun := DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.light_color = Color(1.0, 0.94, 0.82)
-	sun.light_energy = 1.15
-	sun.rotation_degrees = Vector3(-48.0, 34.0, 0.0)
+	sun.light_color = _mood_color(mood, "sun_color", Color(1.0, 0.94, 0.82))
+	sun.light_energy = float(mood.get("sun_energy", 1.15))
+	## Sol mais baixo = fim de tarde: o mood pode abaixar a elevacao.
+	sun.rotation_degrees = Vector3(float(mood.get("sun_elevation", -48.0)), 34.0, 0.0)
 	sun.shadow_enabled = true
 	## A camera fica a ~59m do alvo e enxerga ~66m de chao, entao o fim da
 	## sombra precisa passar de 125m: abaixo disso a borda da ultima cascata
@@ -221,7 +227,8 @@ func _build_terrain(world_data: Dictionary) -> void:
 		float(world_data.get("size", 900.0)),
 		float(world_data.get("amplitude", 5.0)),
 		flat_spots,
-		int(world_data.get("seed", 20260729))
+		int(world_data.get("seed", 20260729)),
+		world_data.get("palette", {})
 	)
 
 
@@ -677,6 +684,12 @@ func _build_player(world_data: Dictionary) -> void:
 
 
 ## ---------------------------------------------------------------- helpers
+
+func _mood_color(mood: Dictionary, key: String, fallback: Color) -> Color:
+	if mood.has(key):
+		return Color.html(str(mood[key]))
+	return fallback
+
 
 func _ground_point(spot: Vector2) -> Vector3:
 	return Vector3(spot.x, height_at(spot.x, spot.y), spot.y)
