@@ -3,16 +3,16 @@
 Tags: #GameDev #Execucao #Roadmap #Godot
 
 - Data: 2026-09-02
-- Estado: jogo completo publicado (repo publico project-sandhawk, releases
-  v0.1.0/v0.1.1 com builds Windows e macOS), campanha de 3 missoes com save,
+- Estado: jogo completo publicado (repo publico project-sandhawk, release
+  atual v0.2.0 com builds Windows e macOS), campanha de 3 missoes com save,
   bioma por missao via palette/mood no JSON, 6 tipos de inimigo com modelos
   proprios, trilha de 16 bits, minimapa com fog of war
 - Ultimo marco: camera afastada para o enquadramento do Desert Strike original
   (tamanho ortografico 50-58); missao 3 "Vigilia Negra" noturna com farol de
   busca no helicoptero (SpotLight sob demanda quando sun_energy < 0.55) e
   fumaca de dano continua na fuselagem (cinza < 45%, preta < 20% de blindagem)
-- Proximo passo: playtest de balanceamento com amigos; cortar release v0.2.0
-  quando o JV aprovar camera nova + missao 3 jogando
+- Proximo passo: playtest de balanceamento com amigos no v0.2.0 (camera nova,
+  missao noturna); colher feedback antes de mexer nos numeros
 - Performance: ~4,9 ms/frame no M4 com tudo ligado (SSIL desligado por
   medicao: 16% do frame para 0,25% dos pixels). Ver tools/perf_probe.tscn
 - Observacao: Godot 4.7.1 via Homebrew no PATH; export templates no HD externo
