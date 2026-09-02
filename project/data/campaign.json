@@ -9,6 +9,11 @@
       "id": "slice_02",
       "name": "Ruptura em Zafir",
       "path": "res://data/missions/slice_02.json"
+    },
+    {
+      "id": "slice_03",
+      "name": "Vigilia Negra",
+      "path": "res://data/missions/slice_03.json"
     }
   ]
 }

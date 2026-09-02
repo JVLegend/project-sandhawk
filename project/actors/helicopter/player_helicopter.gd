@@ -43,6 +43,8 @@ var _tail_rotor_pivot: Node3D
 var _rotor_blur: MeshInstance3D
 var _shadow: Decal
 var _beacon: MeshInstance3D
+var _damage_smoke: GPUParticles3D
+var _night_spot: SpotLight3D
 
 var _spawn_position := Vector3.ZERO
 var _respawning := false
@@ -220,6 +222,8 @@ func _update_visuals(delta: float) -> void:
 		color.a = blur_alpha
 		rotor_material.albedo_color = color
 
+	_update_damage_smoke()
+
 	_beacon_time += delta
 	if _beacon != null:
 		var beacon_material := _beacon.material_override as StandardMaterial3D
@@ -246,6 +250,7 @@ func _ensure_structure() -> void:
 	_build_skids()
 	_build_main_rotor()
 	_build_lights()
+	_build_damage_smoke()
 	_build_shadow()
 
 
@@ -398,6 +403,91 @@ func _build_lights() -> void:
 	_add_light(Vector3(0.0, 1.05, 7.4), Color(1.0, 1.0, 0.95))
 
 	_beacon = _add_light(Vector3(0.0, 1.5, 2.1), Color(1.0, 0.2, 0.16))
+
+
+## Farol de busca das missoes noturnas. Criado sob demanda: nas missoes diurnas
+## a luz nem existe, entao nao ha custo de sombra ou de cena.
+func set_night_ops(enabled: bool) -> void:
+	if not enabled:
+		if _night_spot != null:
+			_night_spot.queue_free()
+			_night_spot = null
+		return
+
+	if _night_spot != null:
+		return
+
+	_night_spot = SpotLight3D.new()
+	_night_spot.name = "NightSpot"
+	_night_spot.light_color = Color(1.0, 0.95, 0.83)
+	_night_spot.light_energy = 8.0
+	_night_spot.spot_range = 52.0
+	_night_spot.spot_angle = 36.0
+	_night_spot.spot_attenuation = 0.7
+	_night_spot.shadow_enabled = false
+	_night_spot.position = Vector3(0.0, -0.15, -1.6)
+	_night_spot.rotation_degrees = Vector3(-52.0, 0.0, 0.0)
+	_body_pivot.add_child(_night_spot)
+
+
+## Fumaca continua do motor quando a blindagem esta baixa: leitura de estado
+## sem olhar para o HUD, no espirito dos danos visiveis do Desert Strike.
+func _build_damage_smoke() -> void:
+	_damage_smoke = GPUParticles3D.new()
+	_damage_smoke.name = "DamageSmoke"
+	_damage_smoke.emitting = false
+	_damage_smoke.amount = 26
+	_damage_smoke.lifetime = 1.5
+	_damage_smoke.local_coords = false
+
+	var process := ParticleProcessMaterial.new()
+	process.direction = Vector3(0.0, 1.0, 0.5)
+	process.spread = 14.0
+	process.initial_velocity_min = 2.2
+	process.initial_velocity_max = 3.8
+	process.gravity = Vector3(0.0, 1.8, 0.0)
+	process.scale_min = 0.5
+	process.scale_max = 1.15
+	process.color = Color(0.42, 0.42, 0.45, 0.5)
+	_damage_smoke.process_material = process
+
+	var quad := QuadMesh.new()
+	quad.size = Vector2(1.7, 1.7)
+
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	material.vertex_color_use_as_albedo = true
+	material.albedo_texture = Vfx.get_soft_texture()
+	quad.material = material
+
+	_damage_smoke.draw_pass_1 = quad
+	_damage_smoke.position = Vector3(0.7, 1.0, 1.1)
+	_body_pivot.add_child(_damage_smoke)
+
+
+func _update_damage_smoke() -> void:
+	if _damage_smoke == null or health == null:
+		return
+
+	var ratio := float(health.hp) / maxf(1.0, float(health.max_hp))
+	if _respawning or not is_alive() or ratio >= 0.45:
+		_damage_smoke.emitting = false
+		return
+
+	_damage_smoke.emitting = true
+	var process := _damage_smoke.process_material as ParticleProcessMaterial
+	if process == null:
+		return
+
+	if ratio < 0.2:
+		## Critico: fumaca preta e densa.
+		process.color = Color(0.14, 0.13, 0.13, 0.82)
+		_damage_smoke.amount_ratio = 1.0
+	else:
+		process.color = Color(0.42, 0.42, 0.45, 0.5)
+		_damage_smoke.amount_ratio = 0.55
 
 
 func _add_light(light_position: Vector3, color: Color) -> MeshInstance3D:

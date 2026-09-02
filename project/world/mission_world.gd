@@ -97,7 +97,9 @@ func _build_environment(world_data: Dictionary) -> void:
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	environment.ambient_light_sky_contribution = 0.5
-	environment.ambient_light_energy = 0.45
+	## Missao noturna precisa levantar a ambiente na mao: o ceu escuro sozinho
+	## deixaria as sombras pretas demais para leitura de jogo.
+	environment.ambient_light_energy = float(mood.get("ambient_energy", 0.45))
 
 	## Tonemap filmico: sem isso o deserto estoura em branco no sol forte.
 	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
@@ -674,6 +676,10 @@ func _build_player(world_data: Dictionary) -> void:
 	player.setup(FLIGHT_TUNING)
 	player.global_position = Vector3(spawn.x, FLIGHT_TUNING.hover_altitude, spawn.y)
 	player.mark_spawn_point()
+
+	## Sol fraco = operacao noturna: liga o farol de busca do helicoptero.
+	var mood: Dictionary = world_data.get("mood", {})
+	player.set_night_ops(float(mood.get("sun_energy", 1.15)) < 0.55)
 
 	camera_rig = CAMERA_RIG_SCENE.instantiate()
 	camera_rig.name = "CameraRig"

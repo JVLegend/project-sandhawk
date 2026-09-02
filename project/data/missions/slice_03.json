@@ -1,0 +1,554 @@
+{
+  "id": "slice_03",
+  "name": "Vigilia Negra",
+  "briefing": [
+    "Situacao: com Zafir isolada, o inimigo ativou uma rede de radares noturnos na bacia de Rasheed.",
+    "Enquanto os tres radares operarem, nenhum voo aliado cruza a regiao. Apague a rede.",
+    "Um C-130 de reconhecimento caiu a sudoeste. Quatro tripulantes sobreviveram e aguardam extracao.",
+    "Sem os radares, o centro de comando noturno fica cego. Destrua o QG para fechar a operacao.",
+    "A aldeia de Rasheed segue neutra. Civis dormindo. Nenhum disparo sobre as casas.",
+    "Operacao noturna: use o farol de busca e o radar de bordo. Interceptadores inimigos patrulham no escuro."
+  ],
+  "objectives": [
+    {
+      "id": "radars",
+      "label": "Apagar os tres radares da rede noturna",
+      "type": "destroy",
+      "targets": [
+        "radar_west",
+        "radar_center",
+        "radar_east"
+      ],
+      "required": true
+    },
+    {
+      "id": "aircrew",
+      "label": "Resgatar 4 tripulantes do C-130 e entregar na base",
+      "type": "rescue",
+      "count": 4,
+      "required": true
+    },
+    {
+      "id": "hq",
+      "label": "Destruir o centro de comando noturno",
+      "type": "destroy",
+      "targets": [
+        "hq_vigilia"
+      ],
+      "required": true,
+      "locked_by": [
+        "radars"
+      ]
+    },
+    {
+      "id": "codebook",
+      "label": "Recuperar o livro de codigos do C-130",
+      "type": "collect",
+      "targets": [
+        "codebook_1"
+      ],
+      "required": false
+    }
+  ],
+  "debriefing": {
+    "par_time_sec": 780
+  },
+  "world": {
+    "seed": 20260902,
+    "size": 1300.0,
+    "amplitude": 6.8,
+    "base": [
+      0.0,
+      0.0
+    ],
+    "spawn": [
+      0.0,
+      24.0
+    ],
+    "scatter": {
+      "rocks": 240,
+      "dead_trees": 62
+    },
+    "zones": [
+      {
+        "id": "rasheed_village",
+        "label": "Aldeia de Rasheed",
+        "kind": "village",
+        "position": [
+          140.0,
+          70.0
+        ],
+        "radius": 58.0,
+        "houses": 9,
+        "palms": 8
+      },
+      {
+        "id": "radar_west_zone",
+        "label": "Radar Oeste",
+        "kind": "outpost",
+        "position": [
+          -360.0,
+          -140.0
+        ],
+        "radius": 52.0
+      },
+      {
+        "id": "radar_center_zone",
+        "label": "Radar Central",
+        "kind": "outpost",
+        "position": [
+          -40.0,
+          -330.0
+        ],
+        "radius": 52.0
+      },
+      {
+        "id": "radar_east_zone",
+        "label": "Radar Leste",
+        "kind": "outpost",
+        "position": [
+          300.0,
+          -240.0
+        ],
+        "radius": 54.0
+      },
+      {
+        "id": "crash_site",
+        "label": "Queda do C-130",
+        "kind": "camp",
+        "position": [
+          -180.0,
+          260.0
+        ],
+        "radius": 56.0,
+        "tents": 4
+      },
+      {
+        "id": "hq_compound",
+        "label": "Comando Noturno",
+        "kind": "outpost",
+        "position": [
+          410.0,
+          320.0
+        ],
+        "radius": 76.0
+      }
+    ],
+    "structures": [
+      {
+        "id": "radar_west",
+        "kind": "radar",
+        "position": [
+          -360.0,
+          -140.0
+        ]
+      },
+      {
+        "id": "radar_center",
+        "kind": "radar",
+        "position": [
+          -40.0,
+          -330.0
+        ]
+      },
+      {
+        "id": "radar_east",
+        "kind": "radar",
+        "position": [
+          300.0,
+          -240.0
+        ]
+      },
+      {
+        "id": "hq_vigilia",
+        "kind": "hq",
+        "position": [
+          410.0,
+          320.0
+        ]
+      }
+    ],
+    "enemies": [
+      {
+        "kind": "aaa_gun",
+        "position": [
+          -388.0,
+          -164.0
+        ]
+      },
+      {
+        "kind": "aaa_gun",
+        "position": [
+          -330.0,
+          -114.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          -376.0,
+          -118.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          -344.0,
+          -170.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          -318.0,
+          -146.0
+        ]
+      },
+      {
+        "kind": "aaa_gun",
+        "position": [
+          -66.0,
+          -356.0
+        ]
+      },
+      {
+        "kind": "sam_launcher",
+        "position": [
+          -8.0,
+          -306.0
+        ]
+      },
+      {
+        "kind": "technical",
+        "position": [
+          -84.0,
+          -294.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          -58.0,
+          -310.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          -20.0,
+          -352.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          6.0,
+          -330.0
+        ]
+      },
+      {
+        "kind": "aaa_gun",
+        "position": [
+          272.0,
+          -266.0
+        ]
+      },
+      {
+        "kind": "aaa_gun",
+        "position": [
+          330.0,
+          -214.0
+        ]
+      },
+      {
+        "kind": "tank",
+        "position": [
+          266.0,
+          -206.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          312.0,
+          -262.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          282.0,
+          -228.0
+        ]
+      },
+      {
+        "kind": "technical",
+        "position": [
+          60.0,
+          -180.0
+        ]
+      },
+      {
+        "kind": "technical",
+        "position": [
+          -220.0,
+          40.0
+        ]
+      },
+      {
+        "kind": "tank",
+        "position": [
+          160.0,
+          -60.0
+        ]
+      },
+      {
+        "kind": "enemy_helicopter",
+        "position": [
+          80.0,
+          -260.0
+        ]
+      },
+      {
+        "kind": "enemy_helicopter",
+        "position": [
+          340.0,
+          120.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          -212.0,
+          228.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          -142.0,
+          236.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          -164.0,
+          298.0
+        ]
+      },
+      {
+        "kind": "technical",
+        "position": [
+          -230.0,
+          290.0
+        ]
+      },
+      {
+        "kind": "sam_launcher",
+        "position": [
+          376.0,
+          282.0
+        ]
+      },
+      {
+        "kind": "sam_launcher",
+        "position": [
+          452.0,
+          352.0
+        ]
+      },
+      {
+        "kind": "tank",
+        "position": [
+          380.0,
+          356.0
+        ]
+      },
+      {
+        "kind": "tank",
+        "position": [
+          448.0,
+          286.0
+        ]
+      },
+      {
+        "kind": "aaa_gun",
+        "position": [
+          410.0,
+          252.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          392.0,
+          310.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          428.0,
+          338.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          438.0,
+          300.0
+        ]
+      },
+      {
+        "kind": "soldier_ak",
+        "position": [
+          366.0,
+          334.0
+        ]
+      }
+    ],
+    "pows": [
+      [
+        -196.0,
+        246.0
+      ],
+      [
+        -172.0,
+        238.0
+      ],
+      [
+        -158.0,
+        270.0
+      ],
+      [
+        -190.0,
+        282.0
+      ]
+    ],
+    "pickups": [
+      {
+        "kind": "fuel",
+        "position": [
+          -160.0,
+          -90.0
+        ]
+      },
+      {
+        "kind": "fuel",
+        "position": [
+          120.0,
+          -220.0
+        ]
+      },
+      {
+        "kind": "fuel",
+        "position": [
+          -100.0,
+          160.0
+        ]
+      },
+      {
+        "kind": "fuel",
+        "position": [
+          260.0,
+          160.0
+        ]
+      },
+      {
+        "kind": "fuel",
+        "position": [
+          320.0,
+          -80.0
+        ]
+      },
+      {
+        "kind": "armor",
+        "position": [
+          -300.0,
+          -180.0
+        ]
+      },
+      {
+        "kind": "armor",
+        "position": [
+          40.0,
+          -290.0
+        ]
+      },
+      {
+        "kind": "armor",
+        "position": [
+          330.0,
+          250.0
+        ]
+      },
+      {
+        "kind": "ammo_machinegun",
+        "position": [
+          -60.0,
+          60.0
+        ]
+      },
+      {
+        "kind": "ammo_machinegun",
+        "position": [
+          220.0,
+          -160.0
+        ]
+      },
+      {
+        "kind": "ammo_rockets",
+        "position": [
+          -260.0,
+          -60.0
+        ]
+      },
+      {
+        "kind": "ammo_rockets",
+        "position": [
+          200.0,
+          240.0
+        ]
+      },
+      {
+        "kind": "ammo_missiles",
+        "position": [
+          60.0,
+          -120.0
+        ]
+      },
+      {
+        "kind": "ammo_missiles",
+        "position": [
+          300.0,
+          300.0
+        ]
+      },
+      {
+        "kind": "intel",
+        "id": "codebook_1",
+        "position": [
+          -186.0,
+          262.0
+        ]
+      }
+    ],
+    "palette": {
+      "sand_low": "2e3138",
+      "sand_high": "4a4f59",
+      "rock": "1c1e24",
+      "gravel": "3a3e47",
+      "clay": "343945"
+    },
+    "mood": {
+      "sky_top": "060a18",
+      "sky_horizon": "1c2742",
+      "sun_color": "aebfe8",
+      "sun_energy": 0.46,
+      "sun_elevation": -58.0,
+      "fog_color": "0e1524",
+      "ambient_energy": 1.2
+    }
+  }
+}
