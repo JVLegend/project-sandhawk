@@ -2,16 +2,17 @@
 
 Tags: #GameDev #Execucao #Roadmap #Godot
 
-- Data: 2026-07-29
-- Estado: vertical slice jogavel de ponta a ponta com menu de titulo, campanha
-  de 2 missoes com save, 6 tipos de inimigo com modelos proprios, trilha
-  musical de 16 bits e passe visual completo (texturas CC0, vegetacao em
-  MultiMesh, decoracao de zonas, explosoes em 8 camadas)
-- Ultimo marco: vegetacao por ruido de aglomeracao (2.600 tufos + 420 arbustos
-  em 2 draw calls), overlay de chao das zonas trocado de concreto para terra
-  sem juntas (matava a "grade waffle"), menu de titulo com selecao de missao
-- Proximo passo: playtest de balanceamento; depois, menu de pausa (ESC) e
-  feedback de dano no HUD (flash direcional)
+- Data: 2026-09-02
+- Estado: jogo completo publicado (repo publico project-sandhawk, releases
+  v0.1.0/v0.1.1 com builds Windows e macOS), campanha de 3 missoes com save,
+  bioma por missao via palette/mood no JSON, 6 tipos de inimigo com modelos
+  proprios, trilha de 16 bits, minimapa com fog of war
+- Ultimo marco: camera afastada para o enquadramento do Desert Strike original
+  (tamanho ortografico 50-58); missao 3 "Vigilia Negra" noturna com farol de
+  busca no helicoptero (SpotLight sob demanda quando sun_energy < 0.55) e
+  fumaca de dano continua na fuselagem (cinza < 45%, preta < 20% de blindagem)
+- Proximo passo: playtest de balanceamento com amigos; cortar release v0.2.0
+  quando o JV aprovar camera nova + missao 3 jogando
 - Performance: ~4,9 ms/frame no M4 com tudo ligado (SSIL desligado por
   medicao: 16% do frame para 0,25% dos pixels). Ver tools/perf_probe.tscn
 - Observacao: Godot 4.7.1 via Homebrew no PATH; export templates no HD externo
